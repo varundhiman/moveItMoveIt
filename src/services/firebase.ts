@@ -4,21 +4,14 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  onAuthStateChanged,
   User as FirebaseUser,
 } from 'firebase/auth';
 import {
   getFirestore,
   doc,
   getDocFromServer,
-  setDoc,
-  getDoc,
-  collection,
-  query,
-  getDocs,
-  onSnapshot,
 } from 'firebase/firestore';
-import firebaseConfig from '../../firebase-applet-config.json';
+import defaultConfigFile from '../../firebase-applet-config.json';
 
 export enum OperationType {
   CREATE = 'create',
@@ -72,11 +65,22 @@ export function handleFirestoreError(
   throw new Error(JSON.stringify(errInfo));
 }
 
-// Initialize Firebase App
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+// Support both Netlify Environment Variables (VITE_FIREBASE_*) and committed JSON config
+const activeConfig = {
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || defaultConfigFile.projectId,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || defaultConfigFile.appId,
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || defaultConfigFile.apiKey,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || defaultConfigFile.authDomain,
+  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || defaultConfigFile.firestoreDatabaseId,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || defaultConfigFile.storageBucket,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultConfigFile.messagingSenderId,
+};
 
-// CRITICAL: Initialize Firestore with databaseId as required by AI Studio Fax configuration
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// Initialize Firebase App
+const app = getApps().length > 0 ? getApp() : initializeApp(activeConfig);
+
+// Initialize Firestore with configured databaseId
+export const db = getFirestore(app, activeConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 
 // Google Auth Provider configured for popup
