@@ -5,11 +5,11 @@ import {
   Trophy,
   Flame,
   UserPlus,
-  CheckCircle2,
-  Bell,
   Copy,
   Check,
   Users,
+  Bell,
+  Sparkles,
 } from 'lucide-react';
 
 interface LeaderboardViewProps {
@@ -42,8 +42,6 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
     return b.totalScore - a.totalScore;
   });
 
-  const top3 = sortedMembers.slice(0, 3);
-
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
@@ -54,7 +52,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
     if (navigator.clipboard) {
       navigator.clipboard.writeText(inviteUrl).then(() => {
         setCopied(true);
-        showToast('Invite link copied to clipboard.');
+        showToast('Invite link copied to clipboard!');
         setTimeout(() => setCopied(false), 2000);
       });
     } else {
@@ -65,12 +63,12 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   const handleCheerMember = (member: LeaderboardMember) => {
     onCheer(member.id);
     playRepDing();
-    showToast(`Sent cheer to ${member.name}!`);
+    showToast(`Sent cheer to ${member.name}! 💪`);
   };
 
   const handleNudgeMember = (member: LeaderboardMember) => {
     playRepDing();
-    showToast(`Nudge sent to ${member.name} to hit today’s 5 slots.`);
+    showToast(`Nudged ${member.name} to hit today’s 5 mobility slots.`);
   };
 
   const handleCreateFriend = (e: React.FormEvent) => {
@@ -82,181 +80,172 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
     setShowAddFriend(false);
   };
 
+  const userRankIndex = sortedMembers.findIndex((m) => m.isCurrentUser);
+  const userRank = userRankIndex >= 0 ? userRankIndex + 1 : 1;
+
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-5 pb-24 max-w-md mx-auto">
       {/* Toast Alert */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 border border-slate-700 text-white px-4 py-3 shadow-xl text-xs font-semibold">
+        <div className="fixed top-16 right-4 z-50 rounded-2xl bg-neutral-900 text-white dark:bg-amber-400 dark:text-neutral-950 px-4 py-2.5 shadow-xl text-xs font-bold transition">
           {toastMessage}
         </div>
       )}
 
-      {/* Squad Overview */}
-      <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-300">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white">{user.squadName}</h3>
-                <span className="text-xs text-slate-400 font-mono">
-                  {user.squadCode}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Everyday between 9 AM and 5 PM: complete at least 5 hourly mobility slots.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={handleCopyInvite}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-850 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition border border-slate-750"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Copied' : 'Invite'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowAddFriend(true)}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition shadow-sm"
-            >
-              <UserPlus className="w-3.5 h-3.5" />
-              <span>Add Friend</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Top 3 Standings */}
-      <div className="grid grid-cols-3 gap-3">
-        {top3.map((member, idx) => {
-          const ranks = ['1st', '2nd', '3rd'];
-          return (
-            <div
-              key={member.id}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-center shadow-sm"
-            >
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">
-                {ranks[idx]}
-              </span>
-
-              <img
-                src={member.avatar}
-                alt={member.name}
-                className="w-12 h-12 rounded-full mx-auto object-cover ring-2 ring-slate-800"
-              />
-
-              <h4 className="mt-2.5 font-bold text-xs text-white truncate">
-                {member.name}
-              </h4>
-
-              <div className="mt-1.5 text-xs font-mono font-bold text-emerald-400">
-                {member.todayCompletedCount}/5 Slots
-              </div>
-
-              <div className="mt-1 flex items-center justify-center gap-1 text-[11px] text-amber-400">
-                <Flame className="w-3 h-3 fill-amber-400" />
-                <span>{member.streakDays}d streak</span>
-              </div>
-
-              {!member.isCurrentUser && (
-                <button
-                  type="button"
-                  onClick={() => handleCheerMember(member)}
-                  className="mt-3 w-full py-1 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 text-[11px] font-medium transition"
-                >
-                  Cheer ({member.cheerCount})
-                </button>
-              )}
-            </div>
-          );
-        })}
+      {/* 1. Header Title */}
+      <div className="pt-1">
+        <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900 dark:text-white font-sans leading-none">
+          THE RANKS!
+        </h1>
+        <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-1.5">
+          9-to-5 Workday Squad Leaderboard
+        </p>
       </div>
 
-      {/* Complete Rankings List */}
-      <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-            Today's Rankings
-          </h4>
-          <span className="text-xs text-slate-500">Goal: 5 Slots before 5 PM</span>
+      {/* 2. Top Callout Banner */}
+      <section className="bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-transparent dark:from-neutral-900 dark:to-neutral-950 border border-amber-500/30 dark:border-amber-400/30 rounded-3xl p-5 shadow-xs space-y-1">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🔥</span>
+          <h3 className="text-base font-extrabold text-neutral-900 dark:text-white tracking-tight">
+            Your Crew is on Fire!
+          </h3>
+        </div>
+        <p className="text-xs font-medium text-neutral-600 dark:text-neutral-300">
+          {sortedMembers.filter((m) => m.todayCompletedCount > 0).length} friends active today · You're #{userRank} right now!
+        </p>
+      </section>
+
+      {/* 3. Squad Info & Action Bar */}
+      <div className="flex items-center justify-between gap-2 p-3.5 bg-white dark:bg-neutral-900/80 border border-neutral-200/90 dark:border-neutral-800 rounded-3xl shadow-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center font-bold text-xs text-neutral-800 dark:text-neutral-200 shrink-0">
+            {user.squadCode.slice(0, 2)}
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-bold text-neutral-900 dark:text-white truncate">
+              {user.squadName}
+            </div>
+            <div className="text-[11px] font-mono text-neutral-400 truncate">
+              Code: {user.squadCode}
+            </div>
+          </div>
         </div>
 
-        <div className="divide-y divide-slate-800/80">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={handleCopyInvite}
+            className="px-3 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-xs font-semibold text-neutral-700 dark:text-neutral-300 transition modern-press flex items-center gap-1"
+          >
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copied ? 'Copied' : 'Invite'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowAddFriend(true)}
+            className="px-3 py-1.5 rounded-full bg-neutral-900 text-white dark:bg-emerald-500 dark:text-neutral-950 text-xs font-bold transition modern-press flex items-center gap-1"
+          >
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>Add Friend</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 4. Complete Rankings List */}
+      <section className="space-y-2.5">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            Today's Crew Rankings
+          </h2>
+          <span className="text-[11px] text-neutral-400 dark:text-neutral-500 font-medium">
+            Goal: 5 Slots before 5 PM
+          </span>
+        </div>
+
+        <div className="space-y-2">
           {sortedMembers.map((member, index) => {
             const hasHit5 = member.todayCompletedCount >= 5;
+            const remaining = Math.max(0, 5 - member.todayCompletedCount);
+            const isMe = member.isCurrentUser;
 
             return (
               <div
                 key={member.id}
-                className={`p-4 flex items-center justify-between gap-3 ${
-                  member.isCurrentUser ? 'bg-slate-850/60' : ''
+                className={`p-3.5 sm:p-4 rounded-3xl border transition-all flex items-center justify-between gap-3 ${
+                  isMe
+                    ? 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-300 dark:border-amber-500/50 shadow-xs'
+                    : 'bg-white dark:bg-neutral-900/60 border-neutral-200/90 dark:border-neutral-800 shadow-2xs'
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <span className="w-5 text-center font-mono text-xs font-semibold text-slate-500">
-                    {index + 1}
+                {/* Left: Rank # & Avatar & Name */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`w-5 text-center font-mono font-bold text-xs ${
+                    index === 0
+                      ? 'text-amber-500 font-extrabold'
+                      : index === 1
+                      ? 'text-neutral-400 font-bold'
+                      : index === 2
+                      ? 'text-amber-700 dark:text-amber-600 font-bold'
+                      : 'text-neutral-400'
+                  }`}>
+                    #{index + 1}
                   </span>
 
-                  <img
-                    src={member.avatar}
-                    alt={member.name}
-                    className="w-9 h-9 rounded-full object-cover"
-                  />
+                  <div className="relative shrink-0">
+                    {member.avatar.startsWith('http') ? (
+                      <img
+                        src={member.avatar}
+                        alt={member.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-sky-100 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 flex items-center justify-center font-bold text-sm">
+                        {member.name[0]}
+                      </div>
+                    )}
+                  </div>
 
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-xs text-white">{member.name}</span>
-                      {member.isCurrentUser && (
-                        <span className="text-[10px] font-semibold text-slate-400">
-                          (You)
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="text-sm font-bold text-neutral-900 dark:text-white truncate">
+                        {member.name}
+                      </span>
+                      {isMe && (
+                        <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 px-1.5 py-0.2 rounded-full">
+                          You
                         </span>
                       )}
                     </div>
-                    <div className="text-[11px] text-slate-400">
-                      {member.lastRoutine} · {member.lastActiveTime}
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400 truncate mt-0.5">
+                      <span>{member.todayCompletedCount}/5 moves</span>
+                      <span className="mx-1">·</span>
+                      <span>{member.streakDays}d streak</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="text-xs font-mono font-bold text-white">
-                      {member.todayCompletedCount} of 5
-                    </div>
-                    <div className="text-[10px] text-slate-500">
-                      {hasHit5 ? 'Goal complete' : 'In progress'}
-                    </div>
-                  </div>
+                {/* Right: Status Pill & Action Buttons */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {hasHit5 ? (
+                    <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 px-2.5 py-1 rounded-full text-xs font-semibold">
+                      Complete 👑
+                    </span>
+                  ) : (
+                    <span className="bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 px-2.5 py-1 rounded-full text-xs font-medium">
+                      {remaining} to go
+                    </span>
+                  )}
 
-                  {!member.isCurrentUser && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => handleCheerMember(member)}
-                        title="Send Cheer"
-                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs transition"
-                      >
-                        💪
-                      </button>
-
-                      {!hasHit5 && (
-                        <button
-                          type="button"
-                          onClick={() => handleNudgeMember(member)}
-                          title="Nudge to move"
-                          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-400 hover:text-amber-400 transition"
-                        >
-                          <Bell className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
+                  {!isMe && (
+                    <button
+                      type="button"
+                      onClick={() => handleCheerMember(member)}
+                      title="Cheer"
+                      className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 flex items-center justify-center text-sm transition modern-press"
+                    >
+                      💪
+                    </button>
                   )}
                 </div>
               </div>
@@ -265,49 +254,50 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
         </div>
       </section>
 
-      {/* Activity Feed */}
-      <section className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
-        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-          Recent Squad Activity
-        </h4>
-
-        <div className="space-y-2.5">
-          {activityFeed.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between text-xs py-1.5 text-slate-300"
-            >
-              <div className="flex items-center gap-2.5">
-                <img
-                  src={item.userAvatar}
-                  alt={item.userName}
-                  className="w-6 h-6 rounded-full object-cover"
-                />
-                <span>
-                  <strong className="text-white">{item.userName}</strong> completed {item.routineTitle}
+      {/* 5. Recent Activity Feed */}
+      {activityFeed.length > 0 && (
+        <section className="bg-white dark:bg-neutral-900/60 border border-neutral-200/90 dark:border-neutral-800 rounded-3xl p-4 shadow-xs space-y-2.5">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            Recent Squad Activity
+          </h4>
+          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {activityFeed.slice(0, 4).map((item) => (
+              <div
+                key={item.id}
+                className="py-2.5 flex items-center justify-between text-xs"
+              >
+                <div className="flex items-center gap-2.5 truncate pr-2">
+                  <span className="font-semibold text-neutral-900 dark:text-white truncate">
+                    {item.userName}
+                  </span>
+                  <span className="text-neutral-500 dark:text-neutral-400 truncate">
+                    completed {item.routineTitle}
+                  </span>
+                </div>
+                <span className="text-[11px] text-neutral-400 shrink-0 font-mono">
+                  {item.timeAgo}
                 </span>
               </div>
-              <span className="text-[11px] text-slate-500">{item.timeAgo}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Add Friend Dialog */}
       {showAddFriend && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-xl text-slate-200">
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <UserPlus className="w-4 h-4 text-emerald-400" />
-              Add Friend to Challenge
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 shadow-2xl text-neutral-900 dark:text-white">
+            <h3 className="text-base font-bold flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-amber-500" />
+              Add Friend to Squad
             </h3>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
               Invite friends or coworkers to compete on the 9-to-5 mobility leaderboard.
             </p>
 
             <form onSubmit={handleCreateFriend} className="mt-4 space-y-4">
               <div>
-                <label className="text-xs font-medium text-slate-300 block mb-1">
+                <label className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 block mb-1">
                   Friend's Name
                 </label>
                 <input
@@ -316,7 +306,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                   placeholder="e.g. Jordan Lee"
                   value={friendName}
                   onChange={(e) => setFriendName(e.target.value)}
-                  className="w-full rounded-xl bg-slate-950 border border-slate-750 px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full rounded-2xl bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 px-3.5 py-2.5 text-xs text-neutral-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
               </div>
 
@@ -324,15 +314,15 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddFriend(false)}
-                  className="flex-1 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-750 transition"
+                  className="flex-1 py-2.5 rounded-2xl bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 text-xs font-semibold modern-press"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold hover:bg-emerald-400 transition"
+                  className="flex-1 py-2.5 rounded-2xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 text-xs font-bold modern-press"
                 >
-                  Add
+                  Add Friend
                 </button>
               </div>
             </form>

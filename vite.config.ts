@@ -14,11 +14,11 @@ export default defineConfig(() => {
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
         manifest: {
           id: '/',
-          name: 'ShiftMove: 9-to-5 Mobility',
-          short_name: 'ShiftMove',
+          name: 'MoveMates: 9-to-5 Mobility',
+          short_name: 'MoveMates',
           description: 'Workday fitness mobility challenge with friends. Track squats, pushups, jacks, planks & walks using camera computer vision.',
-          theme_color: '#090d16',
-          background_color: '#090d16',
+          theme_color: '#0B0D13',
+          background_color: '#0B0D13',
           display: 'standalone',
           orientation: 'portrait-primary',
           start_url: '/',
@@ -47,6 +47,7 @@ export default defineConfig(() => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+          maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // 6 MiB to allow unminified dev/build bundles
         },
         devOptions: {
           enabled: true,

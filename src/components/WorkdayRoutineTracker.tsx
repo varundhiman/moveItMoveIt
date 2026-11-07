@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
-import { MobilityRoutine, RoutineLog, WorkdaySlot } from '../types';
+import { RoutineLog, WorkdaySlot } from '../types';
 import {
-  ChevronDown,
-  ChevronUp,
-  Plus,
   Check,
   Clock,
-  Camera,
-  Footprints,
-  Flame,
-  Dumbbell,
-  Zap,
-  ShieldCheck,
-  ArrowRight,
+  ChevronDown,
+  ChevronUp,
   Sparkles,
+  Flame,
+  ArrowRight,
+  Info,
 } from 'lucide-react';
 
 interface WorkdayRoutineTrackerProps {
@@ -22,8 +17,7 @@ interface WorkdayRoutineTrackerProps {
   todayLogs: RoutineLog[];
   inWindow: boolean;
   timeRemainingStr: string;
-  routines: MobilityRoutine[];
-  onSelectRoutine: (routine: MobilityRoutine) => void;
+  onStartMove: () => void;
 }
 
 export const WorkdayRoutineTracker: React.FC<WorkdayRoutineTrackerProps> = ({
@@ -32,32 +26,14 @@ export const WorkdayRoutineTracker: React.FC<WorkdayRoutineTrackerProps> = ({
   todayLogs,
   inWindow,
   timeRemainingStr,
-  routines,
-  onSelectRoutine,
+  onStartMove,
 }) => {
-  const [detailsExpanded, setDetailsExpanded] = useState(false);
-  const [addingActivity, setAddingActivity] = useState(false);
+  const [showScheduleDetails, setShowScheduleDetails] = useState(false);
+  const [selectedSlotForDetail, setSelectedSlotForDetail] = useState<WorkdaySlot | null>(null);
 
   const targetSlots = 5;
   const isGoalMet = completedSlotsCount >= targetSlots;
-  const progressPercent = Math.min(100, Math.round((completedSlotsCount / targetSlots) * 100));
-
-  const getRoutineIcon = (iconName: string) => {
-    switch (iconName) {
-      case 'Flame':
-        return <Flame className="w-4 h-4 text-emerald-400" />;
-      case 'Dumbbell':
-        return <Dumbbell className="w-4 h-4 text-emerald-400" />;
-      case 'Zap':
-        return <Zap className="w-4 h-4 text-emerald-400" />;
-      case 'ShieldCheck':
-        return <ShieldCheck className="w-4 h-4 text-emerald-400" />;
-      case 'Footprints':
-        return <Footprints className="w-4 h-4 text-emerald-400" />;
-      default:
-        return <Sparkles className="w-4 h-4 text-emerald-400" />;
-    }
-  };
+  const remainingSlots = Math.max(0, targetSlots - completedSlotsCount);
 
   const formatLogTime = (isoString?: string) => {
     if (!isoString) return '';
@@ -66,271 +42,241 @@ export const WorkdayRoutineTracker: React.FC<WorkdayRoutineTrackerProps> = ({
   };
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      {/* 1. Primary Time Slots Summary Card (Clickable to reveal details) */}
-      <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-sm transition hover:border-slate-700">
+    <div className="space-y-6 pb-24 max-w-md mx-auto">
+      {/* 1. Header Title */}
+      <div className="flex items-end justify-between pt-1">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900 dark:text-white font-sans leading-none">
+            LET'S MOVE!
+          </h1>
+          <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 mt-1.5 flex items-center gap-1.5">
+            <span>9 AM – 5 PM</span>
+            <span>·</span>
+            <span>Hourly Workday Mobility</span>
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800 px-3 py-1.5 rounded-full shadow-xs">
+          <Clock className="w-3.5 h-3.5 text-amber-500" />
+          <span className="tabular-nums font-mono">{timeRemainingStr}</span>
+        </div>
+      </div>
+
+      {/* 2. Modern Hero Progress Card */}
+      <section className="bg-gradient-to-br from-amber-400 via-amber-400 to-amber-500 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950 border border-amber-300 dark:border-amber-500/30 rounded-3xl p-6 shadow-lg shadow-amber-500/10 dark:shadow-xl dark:shadow-black/40 relative overflow-hidden transition-all">
+        <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-900/80 dark:text-amber-400/90 mb-2">
+          Today's Goal · 5 Hourly Slots
+        </div>
+
+        <div className="flex items-baseline justify-between gap-4">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-6xl font-black font-mono tracking-tight text-neutral-950 dark:text-white tabular-nums">
+              {completedSlotsCount}/{targetSlots}
+            </span>
+          </div>
+
+          <div className="text-right">
+            <div className="text-sm font-extrabold uppercase tracking-tight text-neutral-950 dark:text-white">
+              Moves Completed
+            </div>
+            <div className="text-xs font-semibold text-neutral-900/80 dark:text-neutral-400 mt-0.5">
+              {isGoalMet
+                ? 'Challenge Complete! 🎉'
+                : `${remainingSlots} more to hit daily target`}
+            </div>
+          </div>
+        </div>
+
+        {/* 5-Segmented Modern Bar */}
+        <div className="mt-5 grid grid-cols-5 gap-2">
+          {[0, 1, 2, 3, 4].map((idx) => {
+            const isFilled = idx < completedSlotsCount;
+            return (
+              <div
+                key={idx}
+                className={`h-2.5 rounded-full transition-all duration-300 ${
+                  isFilled
+                    ? 'bg-neutral-950 dark:bg-amber-400 shadow-xs'
+                    : 'bg-black/15 dark:bg-neutral-800'
+                }`}
+              />
+            );
+          })}
+        </div>
+
+        {/* Expand / Collapse Explainer */}
         <button
           type="button"
-          onClick={() => setDetailsExpanded(!detailsExpanded)}
-          className="w-full p-6 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 transition"
-          aria-expanded={detailsExpanded}
+          onClick={() => setShowScheduleDetails(!showScheduleDetails)}
+          className="mt-4 w-full flex items-center justify-between text-xs font-semibold text-neutral-950/90 dark:text-neutral-300 pt-3 border-t border-black/10 dark:border-neutral-800 transition"
         >
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <div className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
-                Workday Mobility Target · 9 AM – 5 PM
-              </div>
-              <div className="mt-2 flex items-baseline gap-2">
-                <span className="text-3xl sm:text-4xl font-extrabold text-white font-mono tabular-nums tracking-tight">
-                  {completedSlotsCount} of {targetSlots}
-                </span>
-                <span className="text-base sm:text-lg font-semibold text-slate-300">
-                  Time Slots Completed
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-slate-400">
-                {isGoalMet
-                  ? 'Daily goal achieved! All 5 hourly slots completed today.'
-                  : `${targetSlots - completedSlotsCount} more hourly ${
-                      targetSlots - completedSlotsCount === 1 ? 'slot' : 'slots'
-                    } needed before 5:00 PM.`}
-              </p>
-            </div>
-
-            <div className="flex flex-col items-end gap-2 shrink-0">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-                <Clock className="w-3.5 h-3.5 text-slate-500" />
-                <span>{timeRemainingStr}</span>
-              </div>
-              <div className="p-1 rounded-lg text-slate-400 hover:text-white transition">
-                {detailsExpanded ? (
-                  <ChevronUp className="w-5 h-5 text-slate-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-slate-400" />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Clean Segmented Progress Bar */}
-          <div className="mt-5 grid grid-cols-5 gap-1.5">
-            {[0, 1, 2, 3, 4].map((idx) => {
-              const isFilled = idx < completedSlotsCount;
-              return (
-                <div
-                  key={idx}
-                  className={`h-2 rounded-full transition-colors duration-300 ${
-                    isFilled ? 'bg-emerald-500' : 'bg-slate-800'
-                  }`}
-                />
-              );
-            })}
-          </div>
-
-          {/* Toggle Hint */}
-          <div className="mt-4 flex items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-800/80">
-            <span>
-              {detailsExpanded ? 'Hide hourly slot schedule' : 'Tap to view 9 AM – 5 PM hourly slot schedule'}
-            </span>
-            <span className="text-emerald-400 font-medium flex items-center gap-1">
-              <span>{detailsExpanded ? 'Collapse' : 'Expand'}</span>
-              {detailsExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-            </span>
-          </div>
+          <span className="flex items-center gap-1.5">
+            <Info className="w-3.5 h-3.5 text-neutral-800 dark:text-amber-400" />
+            <span>How slots work (e.g. 9:55 & 10:05 = 2 slots)</span>
+          </span>
+          <span className="flex items-center gap-1 font-bold">
+            {showScheduleDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </span>
         </button>
 
-        {/* Revealed Details: Hourly Slots (9-10, 10-11, ... 4-5) */}
-        {detailsExpanded && (
-          <div className="border-t border-slate-800 bg-slate-950/60 p-5 sm:p-6 space-y-4 animate-fadeIn">
-            <div className="text-xs text-slate-400 leading-relaxed">
-              Between 9 AM and 5 PM, there are 8 one-hour windows. Completing any mobility routine within a window locks in that slot. For example, moving at 9:55 AM and 10:05 AM covers two distinct slots.
-            </div>
-
-            <div className="divide-y divide-slate-800/70 border border-slate-800/80 rounded-xl overflow-hidden bg-slate-900/50">
-              {slots.map((slot) => {
-                const isCompleted = slot.isCompleted;
-                const isCurrent = slot.isCurrent;
-
-                return (
-                  <div
-                    key={slot.slotIndex}
-                    className={`flex items-center justify-between p-3.5 text-xs transition ${
-                      isCurrent
-                        ? 'bg-slate-800/50'
-                        : isCompleted
-                        ? 'bg-emerald-950/10'
-                        : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-6 h-6 rounded-full flex items-center justify-center font-mono text-[11px] font-bold ${
-                          isCompleted
-                            ? 'bg-emerald-500 text-slate-950'
-                            : isCurrent
-                            ? 'border border-emerald-400 text-emerald-400'
-                            : 'border border-slate-700 text-slate-500'
-                        }`}
-                      >
-                        {isCompleted ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : slot.slotIndex + 1}
-                      </div>
-
-                      <div>
-                        <div className="font-semibold text-white">
-                          {slot.timeLabel}
-                        </div>
-                        {isCompleted && slot.completedLog ? (
-                          <div className="text-slate-400 text-[11px] mt-0.5">
-                            {slot.completedLog.routineTitle} · {formatLogTime(slot.completedLog.completedAt)}
-                          </div>
-                        ) : isCurrent ? (
-                          <div className="text-emerald-400 text-[11px] mt-0.5 font-medium">
-                            Current active slot — ready for activity
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      {isCompleted ? (
-                        <span className="text-emerald-400 font-semibold text-[11px]">
-                          Completed
-                        </span>
-                      ) : isCurrent ? (
-                        <span className="text-emerald-400 font-medium text-[11px]">
-                          Active Now
-                        </span>
-                      ) : slot.isPast ? (
-                        <span className="text-slate-500 text-[11px]">
-                          Unfilled
-                        </span>
-                      ) : (
-                        <span className="text-slate-500 text-[11px]">
-                          Upcoming
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* 2. Add Activity Section */}
-      <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
-        {!addingActivity ? (
-          <div className="text-center py-2">
-            <button
-              type="button"
-              onClick={() => setAddingActivity(true)}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm rounded-xl shadow-sm transition active:scale-[0.99]"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
-              <span>Add Mobility Activity</span>
-            </button>
-            <p className="mt-2.5 text-xs text-slate-400">
-              Select any routine to launch the camera and automatically verify your reps.
+        {showScheduleDetails && (
+          <div className="mt-3 text-xs font-medium text-neutral-900 dark:text-neutral-300 bg-white/75 dark:bg-neutral-800/80 backdrop-blur-xs p-4 rounded-2xl border border-black/10 dark:border-neutral-700/60 space-y-1.5 leading-relaxed">
+            <p>
+              The workday between 9 AM and 5 PM has 8 distinct one-hour slots (9–10, 10–11, 11–12, 12–1, 1–2, 2–3, 3–4, 4–5).
+            </p>
+            <p className="font-semibold text-neutral-950 dark:text-white">
+              Perform any routine inside a window to lock in that slot. Complete any 5 out of 8 to achieve your daily streak!
             </p>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div>
-                <h3 className="text-sm font-bold text-white">
-                  Choose a Mobility Routine
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Camera tracking starts immediately upon selection
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAddingActivity(false)}
-                className="text-xs text-slate-400 hover:text-white transition px-2 py-1 rounded"
-              >
-                Cancel
-              </button>
-            </div>
-
-            {/* List of 5 Mobility Routines */}
-            <div className="space-y-2.5">
-              {routines.map((routine) => {
-                const isWalk = routine.id === 'walk';
-
-                return (
-                  <button
-                    key={routine.id}
-                    type="button"
-                    onClick={() => {
-                      setAddingActivity(false);
-                      onSelectRoutine(routine);
-                    }}
-                    className="w-full text-left p-4 rounded-xl bg-slate-950/70 hover:bg-slate-950 border border-slate-800 hover:border-slate-700 transition flex items-center justify-between gap-4 group"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0">
-                        {getRoutineIcon(routine.iconName)}
-                      </div>
-                      <div>
-                        <div className="font-bold text-sm text-white group-hover:text-emerald-400 transition">
-                          {routine.title}
-                        </div>
-                        <div className="text-xs text-slate-400 mt-0.5 line-clamp-1">
-                          {routine.description}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[11px] font-semibold text-slate-400">
-                        {isWalk ? 'Timer & Cadence' : 'Camera Tracked'}
-                      </span>
-                      <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition" />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         )}
       </section>
 
-      {/* 3. Today's Completed Activity Log */}
-      {todayLogs.length > 0 && (
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-sm">
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">
-            Today's Completed Activities ({todayLogs.length})
-          </h3>
+      {/* 3. "YOUR 8-HOUR RADAR" */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            Your 8-Hour Radar
+          </h2>
+          <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-2.5 py-0.5 rounded-full shadow-2xs">
+            {completedSlotsCount} completed · {8 - completedSlotsCount} remaining
+          </span>
+        </div>
 
-          <div className="divide-y divide-slate-800/80">
-            {todayLogs.map((log) => (
-              <div key={log.id} className="py-3 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
-                    <Check className="w-4 h-4 stroke-[2.5]" />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-white">{log.routineTitle}</div>
-                    <div className="text-slate-400 text-[11px]">
-                      {formatLogTime(log.completedAt)} · {log.durationSeconds}s duration
+        {/* 2-Column Responsive Grid */}
+        <div className="grid grid-cols-2 gap-3">
+          {slots.map((slot) => {
+            const isCompleted = slot.isCompleted;
+            const isCurrent = slot.isCurrent;
+
+            return (
+              <button
+                key={slot.slotIndex}
+                type="button"
+                onClick={() => {
+                  if (isCompleted) {
+                    setSelectedSlotForDetail(slot);
+                  }
+                }}
+                className={`text-left p-4 rounded-2xl border transition-all modern-press flex flex-col justify-between min-h-[88px] ${
+                  isCompleted
+                    ? 'bg-emerald-50 dark:bg-emerald-950/25 border-emerald-200 dark:border-emerald-800/60 shadow-xs'
+                    : isCurrent
+                    ? 'bg-amber-50/70 dark:bg-amber-950/25 border-2 border-amber-400 dark:border-amber-400/80 shadow-sm'
+                    : 'bg-white dark:bg-neutral-900/60 border-neutral-200/90 dark:border-neutral-800/90 shadow-2xs hover:border-neutral-300 dark:hover:border-neutral-700'
+                }`}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-xs font-bold text-neutral-900 dark:text-white font-mono">
+                    {slot.timeLabel.split(' – ')[0]}
+                  </span>
+
+                  {isCompleted ? (
+                    <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold shadow-xs">
+                      <Check className="w-3.5 h-3.5 stroke-[2.8]" />
+                    </span>
+                  ) : isCurrent ? (
+                    <span className="text-[10px] font-bold uppercase bg-amber-400 text-neutral-950 px-2 py-0.5 rounded-full">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500">
+                      Slot {slot.slotIndex + 1}
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-2.5">
+                  {isCompleted && slot.completedLog ? (
+                    <div className="text-xs font-bold text-emerald-800 dark:text-emerald-300 truncate flex items-center gap-1">
+                      <span>✓</span>
+                      <span className="truncate">{slot.completedLog.routineTitle}</span>
                     </div>
-                  </div>
+                  ) : isCurrent ? (
+                    <div className="text-xs font-bold text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                      <span>Ready to Move</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </div>
+                  ) : (
+                    <div className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500">
+                      {slot.isPast ? 'Unfilled' : 'Upcoming'}
+                    </div>
+                  )}
                 </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
 
-                <div className="text-right">
-                  <div className="text-emerald-400 font-mono font-medium">
-                    Verified
-                  </div>
-                  <div className="text-slate-500 text-[11px]">
-                    {log.formScore}% form
-                  </div>
-                </div>
+      {/* 4. Modern Primary CTA Button */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={onStartMove}
+          className="w-full py-4 px-6 rounded-2xl bg-rose-500 hover:bg-rose-400 dark:bg-rose-500 dark:hover:bg-rose-400 text-white font-bold text-base tracking-wide shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2 modern-press transition-all"
+        >
+          <span>Start a Move</span>
+          <span className="text-xl leading-none font-bold">+</span>
+        </button>
+        <p className="text-center text-xs font-medium text-neutral-500 dark:text-neutral-400 mt-2.5">
+          Squats · Push-ups · Plank · Jumping Jacks · Walk
+        </p>
+      </div>
+
+      {/* 5. Completed Slot Details Modal */}
+      {selectedSlotForDetail && selectedSlotForDetail.completedLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 shadow-2xl text-neutral-900 dark:text-white">
+            <div className="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800">
+              <div>
+                <span className="text-[11px] font-semibold text-neutral-400">
+                  Slot {selectedSlotForDetail.slotIndex + 1} · {selectedSlotForDetail.timeLabel}
+                </span>
+                <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
+                  {selectedSlotForDetail.completedLog.routineTitle}
+                </h3>
               </div>
-            ))}
+              <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Check className="w-5 h-5 stroke-[2.5]" />
+              </div>
+            </div>
+
+            <div className="py-4 space-y-2.5 text-xs">
+              <div className="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                <span className="text-neutral-500 dark:text-neutral-400">Completed At</span>
+                <span className="font-mono font-medium">
+                  {formatLogTime(selectedSlotForDetail.completedLog.completedAt)}
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                <span className="text-neutral-500 dark:text-neutral-400">Verification</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                  Verified with AI Vision
+                </span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-neutral-100 dark:border-neutral-800">
+                <span className="text-neutral-500 dark:text-neutral-400">Duration</span>
+                <span className="font-mono">
+                  {selectedSlotForDetail.completedLog.durationSeconds}s
+                </span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-neutral-500 dark:text-neutral-400">Form Score</span>
+                <span className="font-mono font-semibold">
+                  {selectedSlotForDetail.completedLog.formScore}% accuracy
+                </span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setSelectedSlotForDetail(null)}
+              className="mt-2 w-full py-3 rounded-2xl bg-neutral-900 dark:bg-white text-white dark:text-neutral-950 text-xs font-bold modern-press"
+            >
+              Close
+            </button>
           </div>
-        </section>
+        </div>
       )}
     </div>
   );

@@ -4,12 +4,13 @@ import { VisionTracker } from '../services/visionTracker';
 import { useAudioFeedback } from '../hooks/useAudioFeedback';
 import confetti from 'canvas-confetti';
 import {
-  X,
+  ChevronLeft,
   RefreshCw,
   Award,
   CheckCircle2,
   AlertCircle,
   PlusCircle,
+  X,
 } from 'lucide-react';
 
 interface CameraTrackerModalProps {
@@ -42,7 +43,7 @@ export const CameraTrackerModal: React.FC<CameraTrackerModalProps> = ({
   const [holdSeconds, setHoldSeconds] = useState(0);
   const [feedback, setFeedback] = useState<FormFeedback>({
     status: 'waiting',
-    message: 'Position yourself so full body is visible',
+    message: 'Position yourself so full body is visible in frame',
     depthScore: 0,
   });
   const [isCompleted, setIsCompleted] = useState(false);
@@ -158,10 +159,10 @@ export const CameraTrackerModal: React.FC<CameraTrackerModalProps> = ({
 
     try {
       confetti({
-        particleCount: 60,
-        spread: 80,
+        particleCount: 70,
+        spread: 90,
         origin: { y: 0.6 },
-        colors: ['#10b981', '#38bdf8', '#ffffff'],
+        colors: ['#FBBF24', '#34D399', '#F43F5E', '#38BDF8'],
       });
     } catch {
       // ignore
@@ -212,11 +213,11 @@ export const CameraTrackerModal: React.FC<CameraTrackerModalProps> = ({
   };
 
   const displayCurrent = routine.unit === 'seconds' ? holdSeconds : repCount;
-  const progressPercent = Math.min(100, Math.round((displayCurrent / routine.targetCount) * 100));
+  const routineHeadline = routine.id === 'squats' ? 'SQUAT CHECK!' : `${routine.title.toUpperCase()} CHECK!`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-0 sm:p-4 overflow-hidden select-none">
-      <div className="relative w-full h-full sm:max-w-4xl sm:h-[90vh] bg-slate-950 sm:rounded-2xl overflow-hidden border border-slate-800 flex flex-col justify-between shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-5 overflow-y-auto select-none">
+      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-4 sm:p-5 shadow-2xl flex flex-col justify-between my-auto space-y-4 text-white">
         <video
           ref={videoRef}
           playsInline
@@ -224,13 +225,23 @@ export const CameraTrackerModal: React.FC<CameraTrackerModalProps> = ({
           className="hidden"
         />
 
-        {/* Top Control Bar */}
-        <div className="absolute top-0 inset-x-0 z-30 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent">
-          <div className="flex items-center gap-2">
-            <h3 className="text-white font-bold text-sm">
-              {routine.title}
-            </h3>
-            <span className="text-xs text-slate-400">· Computer Vision</span>
+        {/* Top Header */}
+        <div className="flex items-center justify-between pb-1">
+          <div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 hover:text-white mb-1 transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Back</span>
+            </button>
+            <h2 className="text-2xl font-black tracking-tight text-white font-sans leading-none">
+              {routineHeadline}
+            </h2>
+            <p className="text-[11px] font-medium text-neutral-400 mt-1">
+              {routine.targetCount} {routine.unit.toUpperCase()} · Hourly 9–5 Slot
+            </p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -238,39 +249,30 @@ export const CameraTrackerModal: React.FC<CameraTrackerModalProps> = ({
               type="button"
               onClick={toggleCameraFacing}
               title="Flip Camera"
-              className="p-2 rounded-lg bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-white transition"
+              className="w-9 h-9 rounded-full bg-neutral-800 hover:bg-neutral-700 border border-neutral-700/80 flex items-center justify-center text-neutral-200 transition modern-press"
             >
               <RefreshCw className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              title="Close Workout"
-              className="p-2 rounded-lg bg-slate-900/80 border border-slate-700 text-slate-300 hover:text-white transition"
-            >
-              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Viewport with Canvas Overlay */}
-        <div className="relative flex-1 w-full bg-slate-900 flex items-center justify-center overflow-hidden">
+        {/* Camera Viewfinder Viewport */}
+        <div className="relative w-full aspect-[4/3] bg-neutral-950 rounded-2xl border border-neutral-800 overflow-hidden shadow-inner flex items-center justify-center">
           {cameraError ? (
-            <div className="max-w-md p-6 text-center text-slate-300 space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-slate-800 text-slate-400 mx-auto flex items-center justify-center">
-                <AlertCircle className="w-6 h-6" />
+            <div className="p-5 text-center text-white space-y-3">
+              <div className="w-10 h-10 rounded-full bg-neutral-800 text-amber-400 mx-auto flex items-center justify-center">
+                <AlertCircle className="w-5 h-5" />
               </div>
-              <h4 className="text-base font-bold text-white">Camera Access Needed</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Allow camera access in your browser to enable automatic rep detection.
+              <h4 className="text-sm font-bold">Camera Unavailable</h4>
+              <p className="text-xs text-neutral-400 leading-relaxed">
+                Allow camera permission to enable AI auto-counting, or record reps manually.
               </p>
               <button
                 type="button"
                 onClick={handleManualIncrement}
-                className="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs"
+                className="w-full py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase modern-press transition"
               >
-                Count +1 Rep Manually ({displayCurrent}/{routine.targetCount})
+                +1 Rep Manually ({displayCurrent}/{routine.targetCount})
               </button>
             </div>
           ) : (
@@ -282,84 +284,98 @@ export const CameraTrackerModal: React.FC<CameraTrackerModalProps> = ({
 
               {/* Countdown Splash */}
               {countdown !== null && (
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/75">
-                  <div className="text-7xl font-extrabold text-white font-mono tabular-nums">
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70 backdrop-blur-xs">
+                  <div className="text-7xl font-black text-amber-400 font-mono tabular-nums">
                     {countdown}
                   </div>
-                  <p className="mt-3 text-xs text-slate-300 uppercase tracking-wider font-semibold">
-                    Position yourself in frame
+                  <p className="mt-2 text-xs font-bold text-white uppercase tracking-wider">
+                    Get in position
                   </p>
                 </div>
               )}
 
-              {/* Form Feedback Indicator */}
-              <div className="absolute top-16 inset-x-4 z-20 flex justify-center pointer-events-none">
-                <div className="px-4 py-2 rounded-xl bg-slate-900/90 border border-slate-700 text-xs font-semibold text-white flex items-center gap-2 shadow-lg">
+              {/* Rep Counter Overlay Card */}
+              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center z-10">
+                <div className="bg-neutral-950/85 backdrop-blur-md border border-neutral-700/80 rounded-2xl px-6 py-2.5 shadow-xl text-center">
+                  <div className="text-4xl font-black font-mono tracking-tight text-amber-400 tabular-nums">
+                    {String(displayCurrent).padStart(2, '0')} / {String(routine.targetCount).padStart(2, '0')}
+                  </div>
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 mt-0.5">
+                    {routine.unit === 'seconds' ? 'Seconds Held' : 'Reps Counted'}
+                  </div>
+                </div>
+
+                {/* Live Form Guidance Pill */}
+                <div className="mt-3 px-3.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-neutral-700 text-xs font-medium text-white flex items-center gap-1.5 shadow-md">
                   {feedback.status === 'good' ? (
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   ) : (
                     <AlertCircle className="w-4 h-4 text-amber-400" />
                   )}
                   <span>{feedback.message}</span>
-                  {feedback.angle && (
-                    <span className="font-mono text-slate-400 text-[11px]">
-                      {feedback.angle}°
-                    </span>
-                  )}
                 </div>
               </div>
             </>
           )}
         </div>
 
-        {/* Bottom HUD Bar */}
-        <div className="relative z-30 p-4 sm:p-5 bg-slate-950 border-t border-slate-800">
-          <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
-            <div>
-              <div className="text-xs text-slate-400 font-medium">
-                {routine.unit === 'seconds' ? 'Hold Time' : 'Reps Completed'}
-              </div>
-              <div className="text-2xl font-extrabold text-white font-mono tabular-nums mt-0.5">
-                {displayCurrent} <span className="text-sm text-slate-400 font-normal">/ {routine.targetCount} {routine.unit}</span>
-              </div>
-            </div>
+        {/* Form Guidance Card below viewfinder */}
+        <div className="bg-neutral-950/70 border border-neutral-800 rounded-2xl p-4">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+            Form Guidance
+          </h4>
+          <p className="text-xs font-medium text-neutral-300 mt-1 leading-relaxed">
+            {routine.instructions?.[0] || 'Stand with feet shoulder-width, keep chest high, squat to 90°. AI computer vision counts each full rep automatically.'}
+          </p>
+        </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleManualIncrement}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-200 transition"
-                title="Manually log rep"
-              >
-                <PlusCircle className="w-4 h-4 text-emerald-400" />
-                <span>+1 Rep</span>
-              </button>
-            </div>
+        {/* Bottom Actions */}
+        <div className="space-y-2 pt-1">
+          <button
+            type="button"
+            onClick={handleRoutineFinished}
+            className="w-full py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-sm tracking-wide shadow-md shadow-amber-400/10 modern-press transition"
+          >
+            Finish Routine Early
+          </button>
+
+          <div className="flex items-center justify-between px-1 text-xs text-neutral-400">
+            <button
+              type="button"
+              onClick={handleManualIncrement}
+              className="hover:text-white font-medium flex items-center gap-1"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>Tap +1 Manual Rep</span>
+            </button>
+            <span className="font-mono text-[11px]">
+              Goal: {routine.targetCount} {routine.unit}
+            </span>
           </div>
         </div>
 
-        {/* Completion Modal */}
+        {/* Completion Celebration Overlay */}
         {isCompleted && (
-          <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/85 p-4">
-            <div className="w-full max-w-sm rounded-2xl bg-slate-900 border border-slate-700 p-6 text-center shadow-2xl">
-              <div className="w-12 h-12 rounded-xl bg-slate-800 text-emerald-400 mx-auto flex items-center justify-center mb-3">
-                <Award className="w-6 h-6" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="w-full max-w-sm rounded-3xl bg-neutral-900 border border-neutral-800 p-6 text-center shadow-2xl">
+              <div className="w-14 h-14 rounded-2xl bg-amber-400/15 border border-amber-400/30 text-amber-400 mx-auto flex items-center justify-center mb-4">
+                <Award className="w-8 h-8 stroke-[2.2]" />
               </div>
 
-              <h3 className="text-lg font-bold text-white">
-                {routine.title} Completed
+              <h3 className="text-2xl font-black text-white font-sans">
+                Move Complete!
               </h3>
 
-              <p className="mt-1.5 text-xs text-slate-400">
-                Logged to your workday challenge schedule.
+              <p className="mt-1 text-xs text-neutral-400">
+                You crushed {routine.title}! Hourly slot successfully recorded.
               </p>
 
               <button
                 type="button"
                 onClick={handleSaveAndExit}
-                className="mt-5 w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition"
+                className="mt-6 w-full py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-sm tracking-wide shadow-lg shadow-amber-400/20 modern-press transition"
               >
-                Save & Return to Tracker
+                Log to My Radar & Continue
               </button>
             </div>
           </div>

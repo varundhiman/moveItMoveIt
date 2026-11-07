@@ -8,13 +8,16 @@ import { MobilityRoutine, LeaderboardMember, RoutineLog, ActivityFeedItem, Digit
 import { MOBILITY_ROUTINES } from './data/routines';
 import { storage } from './services/storage';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { db } from './services/firebase';
 import { doc, setDoc, updateDoc, collection } from 'firebase/firestore';
 import { evaluateBadges } from './services/achievements';
 import { Header } from './components/Header';
+import { BottomNavBar, NavTab } from './components/BottomNavBar';
 import { WorkdayRoutineTracker } from './components/WorkdayRoutineTracker';
-import { BadgesView } from './components/BadgesView';
+import { PickMoveView } from './components/PickMoveView';
 import { LeaderboardView } from './components/LeaderboardView';
+import { BadgesView } from './components/BadgesView';
 import { CameraTrackerModal } from './components/CameraTrackerModal';
 import { WalkTrackerModal } from './components/WalkTrackerModal';
 import { StorePublishModal } from './components/StorePublishModal';
@@ -29,7 +32,7 @@ function AppContent() {
   const [todayLogs, setTodayLogs] = useState<RoutineLog[]>(() => storage.getTodayLogs());
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>(() => storage.getActivityFeed());
 
-  const [activeTab, setActiveTab] = useState<'routines' | 'badges' | 'leaderboard'>('routines');
+  const [activeTab, setActiveTab] = useState<NavTab>('radar');
   const [activeWorkout, setActiveWorkout] = useState<MobilityRoutine | null>(null);
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -77,6 +80,7 @@ function AppContent() {
     setSlotData(updatedSlots);
     setActivityFeed(storage.getActivityFeed());
     setActiveWorkout(null);
+    setActiveTab('radar'); // Return to Radar screen to see completed slot
 
     // Evaluate badges
     const badgeEval = evaluateBadges(
@@ -139,50 +143,65 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#FAF7F0] dark:bg-[#0B0D13] text-neutral-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-amber-400/30 transition-colors">
       <OfflineIndicator />
 
-      {/* Top Header */}
-      <Header
-        user={profile}
-        completedSlotsCount={slotData.completedSlotsCount}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onOpenStoreModal={() => setShowStoreModal(true)}
-        onOpenAuthModal={() => setShowAuthModal(true)}
-        onToggleSound={handleToggleSound}
-      />
+      {/* Mobile Shell Wrapper with crisp borders for desktop viewing */}
+      <div className="w-full max-w-md sm:max-w-lg mx-auto bg-[#FAF7F0] dark:bg-[#0B0D13] min-h-screen flex flex-col sm:border-x sm:border-neutral-200/80 dark:sm:border-neutral-800/80 sm:shadow-2xl relative transition-colors">
+        {/* Top Header with MoveMates wordmark, streak, audio, and [ME] badge */}
+        <Header
+          user={profile}
+          completedSlotsCount={slotData.completedSlotsCount}
+          onOpenStoreModal={() => setShowStoreModal(true)}
+          onOpenAuthModal={() => setShowAuthModal(true)}
+          onToggleSound={handleToggleSound}
+        />
 
-      {/* Main View Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-8 sm:px-6">
-        {activeTab === 'routines' && (
-          <WorkdayRoutineTracker
-            slots={slotData.slots}
-            completedSlotsCount={slotData.completedSlotsCount}
-            todayLogs={todayLogs}
-            inWindow={windowInfo.inWindow}
-            timeRemainingStr={windowInfo.timeRemainingStr}
-            routines={MOBILITY_ROUTINES}
-            onSelectRoutine={handleSelectRoutineToTrack}
-          />
-        )}
+        {/* Main View Area */}
+        <main className="flex-1 px-4 py-5 sm:px-6">
+          {activeTab === 'radar' && (
+            <WorkdayRoutineTracker
+              slots={slotData.slots}
+              completedSlotsCount={slotData.completedSlotsCount}
+              todayLogs={todayLogs}
+              inWindow={windowInfo.inWindow}
+              timeRemainingStr={windowInfo.timeRemainingStr}
+              onStartMove={() => setActiveTab('moves')}
+            />
+          )}
 
-        {activeTab === 'badges' && (
-          <BadgesView badges={badges} />
-        )}
+          {activeTab === 'moves' && (
+            <PickMoveView
+              routines={MOBILITY_ROUTINES}
+              onSelectRoutine={handleSelectRoutineToTrack}
+              onBackToRadar={() => setActiveTab('radar')}
+            />
+          )}
 
-        {activeTab === 'leaderboard' && (
-          <LeaderboardView
-            user={profile}
-            members={members}
-            activityFeed={activityFeed}
-            onCheer={handleCheerMember}
-            onAddFriend={handleAddFriend}
-          />
-        )}
-      </main>
+          {activeTab === 'ranks' && (
+            <LeaderboardView
+              user={profile}
+              members={members}
+              activityFeed={activityFeed}
+              onCheer={handleCheerMember}
+              onAddFriend={handleAddFriend}
+            />
+          )}
 
-      {/* Camera Workout Modal */}
+          {activeTab === 'badges' && (
+            <BadgesView badges={badges} />
+          )}
+        </main>
+
+        {/* Bottom Navigation Bar */}
+        <BottomNavBar
+          activeTab={activeTab}
+          onChangeTab={setActiveTab}
+          completedSlotsCount={slotData.completedSlotsCount}
+        />
+      </div>
+
+      {/* Screen 7: Camera Workout Tracker Modal */}
       {activeWorkout && activeWorkout.id !== 'walk' && (
         <CameraTrackerModal
           routine={activeWorkout}
@@ -206,12 +225,12 @@ function AppContent() {
         />
       )}
 
-      {/* App Stores Publish Guide Modal */}
+      {/* App Stores & Netlify Hosting Guide Modal */}
       {showStoreModal && (
         <StorePublishModal onClose={() => setShowStoreModal(false)} />
       )}
 
-      {/* User Management & Login Modal */}
+      {/* User Management & Google Login Modal */}
       {showAuthModal && (
         <AuthModal onClose={() => setShowAuthModal(false)} />
       )}
@@ -229,8 +248,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

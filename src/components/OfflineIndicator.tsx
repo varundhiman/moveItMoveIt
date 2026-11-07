@@ -22,9 +22,9 @@ export const OfflineIndicator: React.FC = () => {
   if (isOnline) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-xl bg-amber-500 text-slate-950 px-3.5 py-2 text-xs font-bold shadow-2xl animate-bounce">
-      <WifiOff className="w-4 h-4" />
-      <span>Offline Mode — All camera workouts & local logs cached safely.</span>
+    <div className="fixed top-16 left-4 right-4 z-50 flex items-center justify-center gap-2 rounded-2xl bg-amber-500 text-neutral-950 px-4 py-2 text-xs font-bold shadow-lg animate-bounce">
+      <WifiOff className="w-4 h-4 stroke-[2.5]" />
+      <span>Offline Mode — Rep tracking & local routine logs cached safely</span>
     </div>
   );
 };

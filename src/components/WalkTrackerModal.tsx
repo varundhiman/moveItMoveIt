@@ -2,7 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { MobilityRoutine, RoutineLog } from '../types';
 import { useAudioFeedback } from '../hooks/useAudioFeedback';
 import confetti from 'canvas-confetti';
-import { Footprints, X, Play, Pause, Award, FastForward } from 'lucide-react';
+import {
+  ChevronLeft,
+  Footprints,
+  Play,
+  Pause,
+  Award,
+} from 'lucide-react';
 
 interface WalkTrackerModalProps {
   routine: MobilityRoutine;
@@ -21,92 +27,59 @@ export const WalkTrackerModal: React.FC<WalkTrackerModalProps> = ({
   onClose,
   onComplete,
 }) => {
-  const TOTAL_SECONDS = 5 * 60; // 300 seconds
-  const [secondsRemaining, setSecondsRemaining] = useState(TOTAL_SECONDS);
+  const targetSeconds = routine.targetCount; // 300 seconds (5 min)
+  const [secondsRemaining, setSecondsRemaining] = useState(targetSeconds);
   const [isActive, setIsActive] = useState(true);
-  const [steps, setSteps] = useState(0);
+  const [stepEstimate, setStepEstimate] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
   const [startTime] = useState(Date.now());
 
-  const { playRepDing, playCheer, speak } = useAudioFeedback(soundEnabled, voiceEnabled);
+  const { playRepDing, playCheer } = useAudioFeedback(soundEnabled, voiceEnabled);
 
   useEffect(() => {
-    let lastAccel = 0;
-    const handleMotion = (event: DeviceMotionEvent) => {
-      if (!isActive || isCompleted) return;
-      const acc = event.accelerationIncludingGravity;
-      if (!acc) return;
-      const total = Math.sqrt((acc.x || 0) ** 2 + (acc.y || 0) ** 2 + (acc.z || 0) ** 2);
-      const delta = Math.abs(total - lastAccel);
-      if (delta > 2.5) {
-        setSteps((s) => s + 1);
-      }
-      lastAccel = total;
-    };
-
-    if (typeof window !== 'undefined' && 'DeviceMotionEvent' in window) {
-      window.addEventListener('devicemotion', handleMotion);
+    let interval: NodeJS.Timeout | null = null;
+    if (isActive && secondsRemaining > 0 && !isCompleted) {
+      interval = setInterval(() => {
+        setSecondsRemaining((prev) => {
+          if (prev <= 1) {
+            handleComplete();
+            return 0;
+          }
+          if ((targetSeconds - prev) % 2 === 0) {
+            setStepEstimate((s) => s + 3);
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
-
     return () => {
-      if (typeof window !== 'undefined' && 'DeviceMotionEvent' in window) {
-        window.removeEventListener('devicemotion', handleMotion);
-      }
+      if (interval) clearInterval(interval);
     };
-  }, [isActive, isCompleted]);
+  }, [isActive, secondsRemaining, isCompleted]);
 
-  useEffect(() => {
-    if (!isActive || isCompleted) return;
-
-    const interval = setInterval(() => {
-      setSecondsRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          finishWalk();
-          return 0;
-        }
-
-        setSteps((s) => s + Math.floor(Math.random() * 2) + 1);
-
-        if ((prev - 1) % 60 === 0 && prev > 60) {
-          playRepDing();
-          const minsLeft = Math.floor((prev - 1) / 60);
-          speak(`${minsLeft} minutes remaining`);
-        }
-
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isActive, isCompleted, playRepDing, speak]);
-
-  const finishWalk = () => {
+  const handleComplete = () => {
     setIsCompleted(true);
+    setIsActive(false);
     playCheer();
     try {
       confetti({
-        particleCount: 60,
-        spread: 80,
+        particleCount: 70,
+        spread: 90,
         origin: { y: 0.6 },
-        colors: ['#10b981', '#38bdf8', '#ffffff'],
+        colors: ['#38BDF8', '#FBBF24', '#34D399'],
       });
     } catch {
       // ignore
     }
   };
 
-  const handleFastForward = () => {
-    setSecondsRemaining((prev) => Math.max(1, prev - 60));
-    setSteps((s) => s + 110);
-  };
-
   const handleSaveAndExit = () => {
-    const durationSeconds = Math.round((Date.now() - startTime) / 1000);
+    const elapsed = targetSeconds - secondsRemaining;
+    const durationSeconds = Math.max(elapsed, Math.round((Date.now() - startTime) / 1000));
     const log: RoutineLog = {
       id: `log_${Date.now()}`,
-      routineId: 'walk',
-      routineTitle: '5 Min Walk',
+      routineId: routine.id,
+      routineTitle: routine.title,
       completedAt: new Date().toISOString(),
       isWithin9to5,
       score: 150,
@@ -116,77 +89,69 @@ export const WalkTrackerModal: React.FC<WalkTrackerModalProps> = ({
     onComplete(log);
   };
 
-  const elapsed = TOTAL_SECONDS - secondsRemaining;
-  const progressPercent = Math.min(100, Math.round((elapsed / TOTAL_SECONDS) * 100));
-
   const minutes = Math.floor(secondsRemaining / 60);
   const seconds = secondsRemaining % 60;
-  const timeFormatted = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  const timeFormatted = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 select-none">
-      <div className="relative w-full max-w-md bg-slate-950 rounded-2xl border border-slate-800 p-6 flex flex-col justify-between shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-5 select-none">
+      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col justify-between space-y-4 text-white">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <Footprints className="w-5 h-5 text-emerald-400" />
-            <div>
-              <h3 className="text-white font-bold text-sm">5 Min Desk Walk</h3>
-              <p className="text-xs text-slate-400">Step away from your workstation</p>
-            </div>
+        <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
+          <div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-neutral-400 hover:text-white mb-1 transition"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span>Back</span>
+            </button>
+            <h2 className="text-2xl font-black tracking-tight text-white font-sans leading-none">
+              5 Min Walk
+            </h2>
+            <p className="text-[11px] font-medium text-neutral-400 mt-1">
+              Hourly Step Break · 9–5 Slot
+            </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition"
-          >
-            <X className="w-4 h-4" />
-          </button>
+
+          <div className="w-10 h-10 rounded-2xl bg-sky-500/15 border border-sky-500/30 text-sky-400 flex items-center justify-center">
+            <Footprints className="w-5 h-5 stroke-[2.2]" />
+          </div>
         </div>
 
-        {/* Center Countdown */}
-        <div className="my-8 flex flex-col items-center justify-center">
-          <div className="relative w-44 h-44 flex items-center justify-center">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="42"
-                fill="none"
-                stroke="#1e293b"
-                strokeWidth="6"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="42"
-                fill="none"
-                stroke="#10b981"
-                strokeWidth="6"
-                strokeDasharray="263.8"
-                strokeDashoffset={263.8 - (263.8 * progressPercent) / 100}
-                strokeLinecap="round"
-                className="transition-all duration-500 ease-out"
-              />
-            </svg>
-
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-              <span className="text-3xl font-extrabold text-white font-mono tabular-nums">
-                {timeFormatted}
-              </span>
-              <span className="text-xs text-slate-400 font-mono mt-0.5">
-                {steps} steps
-              </span>
-            </div>
+        {/* Timer Card */}
+        <div className="bg-neutral-950/70 border border-neutral-800 rounded-3xl p-6 text-center space-y-2">
+          <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
+            Time Remaining
+          </span>
+          <div className="text-6xl font-black font-mono tracking-tight text-white tabular-nums">
+            {timeFormatted}
           </div>
+
+          <div className="pt-2 flex items-center justify-center gap-2">
+            <span className="inline-block bg-neutral-800 text-sky-400 text-xs font-semibold px-3 py-1 rounded-full font-mono">
+              ~{stepEstimate} Steps Estimated
+            </span>
+          </div>
+        </div>
+
+        {/* Guidance card */}
+        <div className="bg-neutral-950/50 border border-neutral-800/80 rounded-2xl p-4">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
+            Walk Guidance
+          </h4>
+          <p className="text-xs font-medium text-neutral-300 mt-1 leading-relaxed">
+            Step away from your workstation. Walk around your home or office floor, stretch your calves, and rest your eyes from screen glare.
+          </p>
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 pt-1">
           <button
             type="button"
             onClick={() => setIsActive(!isActive)}
-            className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-white font-semibold text-xs flex items-center justify-center gap-2 transition"
+            className="flex-1 py-3.5 rounded-2xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-xs uppercase modern-press transition flex items-center justify-center gap-2"
           >
             {isActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             <span>{isActive ? 'Pause' : 'Resume'}</span>
@@ -194,32 +159,35 @@ export const WalkTrackerModal: React.FC<WalkTrackerModalProps> = ({
 
           <button
             type="button"
-            onClick={handleFastForward}
-            className="px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition text-xs font-semibold flex items-center gap-1"
-            title="Fast forward 1 min"
+            onClick={handleComplete}
+            className="flex-1 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs uppercase modern-press transition"
           >
-            <FastForward className="w-3.5 h-3.5" />
-            <span>+1m</span>
+            Finish Early
           </button>
         </div>
 
         {/* Completion Modal */}
         {isCompleted && (
-          <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/90 p-6 rounded-2xl">
-            <div className="w-full text-center space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-slate-800 text-emerald-400 mx-auto flex items-center justify-center">
-                <Award className="w-6 h-6" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+            <div className="w-full max-w-sm rounded-3xl bg-neutral-900 border border-neutral-800 p-6 text-center shadow-2xl">
+              <div className="w-14 h-14 rounded-2xl bg-sky-500/15 border border-sky-500/30 text-sky-400 mx-auto flex items-center justify-center mb-4">
+                <Award className="w-8 h-8 stroke-[2.2]" />
               </div>
-              <h3 className="text-base font-bold text-white">5-Minute Walk Complete</h3>
-              <p className="text-xs text-slate-400">
-                You logged {steps} steps and completed this time slot.
+
+              <h3 className="text-2xl font-black text-white font-sans">
+                Walk Completed!
+              </h3>
+
+              <p className="mt-1 text-xs text-neutral-400">
+                Logged to your 9–5 workday mobility schedule.
               </p>
+
               <button
                 type="button"
                 onClick={handleSaveAndExit}
-                className="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition"
+                className="mt-6 w-full py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-sm tracking-wide modern-press transition"
               >
-                Log Walk to Schedule
+                Log to My Radar & Continue
               </button>
             </div>
           </div>

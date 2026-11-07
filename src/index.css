@@ -1,16 +1,24 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color-scheme: dark;
+    color-scheme: light dark;
   }
 
   body {
-    background-color: #020617; /* Slate 950 */
-    color: #f8fafc;
+    background-color: #FAF7F0;
+    color: #111827;
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .dark body {
+    background-color: #0B0D13;
+    color: #F3F4F6;
   }
 }
 
@@ -18,10 +26,19 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Minimalist Dark Scrollbars */
+/* Modern tactile button press animation */
+.modern-press {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.modern-press:active {
+  transform: scale(0.975);
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -29,10 +46,18 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #CBD5E1;
   border-radius: 9999px;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
 ::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
