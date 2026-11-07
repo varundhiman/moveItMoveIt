@@ -1,0 +1,177 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with workday mobility stats and squad membership",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Unique Firebase Auth UID"
+        },
+        "name": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 128
+        },
+        "avatar": {
+          "type": "string",
+          "description": "Avatar photo URL",
+          "maxLength": 512
+        },
+        "streakDays": {
+          "type": "number",
+          "description": "Consecutive challenge streak days"
+        },
+        "todaySlotsCount": {
+          "type": "number",
+          "description": "Hourly time slots completed today (out of 5)"
+        },
+        "totalPoints": {
+          "type": "number",
+          "description": "Total XP / points earned"
+        },
+        "squadCode": {
+          "type": "string",
+          "description": "Code of active challenge squad",
+          "maxLength": 64
+        },
+        "squadName": {
+          "type": "string",
+          "description": "Name of challenge squad",
+          "maxLength": 128
+        },
+        "unlockedBadgeIds": {
+          "type": "array",
+          "description": "List of unlocked badge IDs"
+        },
+        "lastActiveTime": {
+          "type": "string",
+          "description": "Human readable last activity"
+        },
+        "lastRoutine": {
+          "type": "string",
+          "description": "Title of last routine performed",
+          "maxLength": 64
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["userId", "name", "email", "todaySlotsCount", "streakDays"]
+    },
+    "RoutineLog": {
+      "title": "RoutineLog",
+      "description": "Record of a verified completed mobility routine",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of user who performed routine"
+        },
+        "routineId": {
+          "type": "string",
+          "description": "ID of mobility routine",
+          "enum": ["squats", "pushups", "jumping_jacks", "plank", "walk"]
+        },
+        "routineTitle": {
+          "type": "string",
+          "description": "Human title of routine",
+          "maxLength": 64
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "ISO timestamp when routine completed"
+        },
+        "isWithin9to5": {
+          "type": "boolean",
+          "description": "Whether performed during workday challenge window"
+        },
+        "slotIndex": {
+          "type": "number",
+          "description": "Hour slot index 0-7 corresponding to 9am-5pm"
+        },
+        "score": {
+          "type": "number",
+          "description": "Points earned for routine"
+        },
+        "formScore": {
+          "type": "number",
+          "description": "Computer vision form accuracy percentage"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Duration in seconds"
+        }
+      },
+      "required": ["userId", "routineId", "routineTitle", "completedAt", "score"]
+    },
+    "SquadActivity": {
+      "title": "SquadActivity",
+      "description": "Public activity log item for squad feed and cheers",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of user"
+        },
+        "userName": {
+          "type": "string",
+          "description": "Display name of user",
+          "maxLength": 100
+        },
+        "userAvatar": {
+          "type": "string",
+          "description": "Avatar of user",
+          "maxLength": 512
+        },
+        "routineTitle": {
+          "type": "string",
+          "description": "Routine performed",
+          "maxLength": 64
+        },
+        "routineType": {
+          "type": "string",
+          "description": "Type of routine"
+        },
+        "timeAgo": {
+          "type": "string",
+          "description": "Human friendly time"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Epoch timestamp"
+        },
+        "cheers": {
+          "type": "number",
+          "description": "Number of cheers received"
+        }
+      },
+      "required": ["userId", "userName", "routineTitle", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile with 9-to-5 mobility challenge scores"
+    },
+    "/users/{userId}/logs/{logId}": {
+      "schema": "RoutineLog",
+      "description": "Verified mobility routine logs for user"
+    },
+    "/activity/{activityId}": {
+      "schema": "SquadActivity",
+      "description": "Shared activity feed items for squad"
+    }
+  }
+}

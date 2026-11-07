@@ -1,0 +1,60 @@
+import { DigitalBadge } from '../types';
+
+export const BADGE_DEFINITIONS: Omit<DigitalBadge, 'isUnlocked' | 'unlockedAt' | 'progress'>[] = [
+  {
+    id: 'early_bird',
+    title: 'Early Bird',
+    category: 'timing',
+    description: 'Broke up morning stagnation by completing a mobility routine before 10:00 AM.',
+    requirement: 'Complete any routine before 10:00 AM (9–10 AM slot)',
+    iconName: 'Sunrise',
+  },
+  {
+    id: 'workday_warrior_5',
+    title: '5-Slot Finisher',
+    category: 'completion',
+    description: 'Completed the full workday mobility challenge with at least 5 completed time slots.',
+    requirement: 'Complete 5 hourly mobility time slots in one day',
+    iconName: 'Trophy',
+  },
+  {
+    id: 'streak_3',
+    title: '3-Day Momentum',
+    category: 'streak',
+    description: 'Locked in three consecutive workdays of hitting your mobility goal.',
+    requirement: 'Reach a 3-day challenge streak',
+    iconName: 'Flame',
+  },
+  {
+    id: 'streak_7',
+    title: '7-Day Habit',
+    category: 'streak',
+    description: 'A full week of workplace movement discipline and focus.',
+    requirement: 'Reach a 7-day challenge streak',
+    iconName: 'Award',
+  },
+  {
+    id: 'all_rounder',
+    title: 'Full Spectrum',
+    category: 'mastery',
+    description: 'Covered every mobility vector: Squats, Pushups, Jacks, Plank, and Walk.',
+    requirement: 'Perform at least one of each of the 5 routines',
+    iconName: 'Compass',
+  },
+  {
+    id: 'century_club',
+    title: 'Century Reps',
+    category: 'mastery',
+    description: 'Surpassed 100 cumulative repetitions tracked by computer vision.',
+    requirement: 'Accumulate 100+ total mobility reps',
+    iconName: 'Zap',
+  },
+  {
+    id: 'perfect_posture',
+    title: 'Precision Form',
+    category: 'mastery',
+    description: 'Achieved near-perfect joint range of motion verified by the AI camera.',
+    requirement: 'Score 95%+ form accuracy on any camera routine',
+    iconName: 'ShieldCheck',
+  },
+];

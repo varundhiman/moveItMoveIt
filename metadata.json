@@ -1,0 +1,10 @@
+{
+  "name": "ShiftMove: 9-to-5 Mobility",
+  "description": "Workday fitness mobility challenge with friends. Track squats, pushups, jumping jacks, planks, and walks between 9 AM and 5 PM with AI camera rep tracking and live shared leaderboards.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
