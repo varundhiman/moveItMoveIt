@@ -9,8 +9,10 @@ interface AuthContextType {
   firebaseUser: FirebaseUser | null;
   profile: UserProfile;
   loading: boolean;
+  isGuest: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
+  continueAsGuest: () => void;
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
 }
 
@@ -20,12 +22,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [profile, setProfile] = useState<UserProfile>(() => storage.getUserProfile());
   const [loading, setLoading] = useState(true);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
+    // onAuthStateChanged automatically restores persisted user from browserLocalPersistence
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
       if (user) {
-        // Sync with Firestore user profile
+        setIsGuest(false);
         try {
           const userDocRef = doc(db, 'users', user.uid);
           const snap = await getDoc(userDocRef);
@@ -39,28 +43,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               streakDays: data.streakDays || 1,
               todayRoutinesCount: data.todaySlotsCount || 0,
               totalPoints: data.totalPoints || 0,
-              squadCode: data.squadCode || 'SQUAD-95-MOVE',
-              squadName: data.squadName || 'Desk Breakers 9-to-5',
+              squadCode: data.squadCode || 'MOVE-9TO5',
+              squadName: data.squadName || '9-to-5 Workplace Mobility',
               reminderIntervalMinutes: data.reminderIntervalMinutes || 60,
               soundEnabled: data.soundEnabled !== false,
               voiceEnabled: data.voiceEnabled !== false,
+              currentChallengeId: data.currentChallengeId,
+              unlockedBadgeIds: data.unlockedBadgeIds || [],
             };
             setProfile(synced);
             storage.saveUserProfile(synced);
           } else {
-            // New user registration
+            // New user registration in Firestore
             const newProfile: UserProfile = {
               id: user.uid,
               name: user.displayName || 'Athlete',
               avatar: user.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
               streakDays: 1,
               todayRoutinesCount: 0,
-              totalPoints: 100,
-              squadCode: 'SQUAD-95-MOVE',
-              squadName: 'Desk Breakers 9-to-5',
+              totalPoints: 0,
+              squadCode: 'MOVE-9TO5',
+              squadName: '9-to-5 Workplace Mobility',
               reminderIntervalMinutes: 60,
               soundEnabled: true,
               voiceEnabled: true,
+              unlockedBadgeIds: [],
             };
 
             await setDoc(userDocRef, {
@@ -95,7 +102,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async () => {
     try {
-      await loginWithGoogle();
+      const user = await loginWithGoogle();
+      setFirebaseUser(user);
+      setIsGuest(false);
     } catch (err) {
       console.error('Failed to sign in', err);
       throw err;
@@ -106,12 +115,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await logoutUser();
       setFirebaseUser(null);
+      setIsGuest(false);
       setProfile(INITIAL_USER);
       storage.saveUserProfile(INITIAL_USER);
     } catch (err) {
       console.error('Failed to sign out', err);
       throw err;
     }
+  };
+
+  const continueAsGuest = () => {
+    setIsGuest(true);
   };
 
   const updateUserProfile = async (data: Partial<UserProfile>) => {
@@ -129,6 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           streakDays: updated.streakDays,
           todaySlotsCount: updated.todayRoutinesCount,
           totalPoints: updated.totalPoints,
+          currentChallengeId: updated.currentChallengeId || null,
+          unlockedBadgeIds: updated.unlockedBadgeIds || [],
           updatedAt: new Date().toISOString(),
         });
       } catch (err) {
@@ -143,8 +159,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         firebaseUser,
         profile,
         loading,
+        isGuest,
         signIn,
         signOut,
+        continueAsGuest,
         updateUserProfile,
       }}
     >

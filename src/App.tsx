@@ -21,6 +21,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { db } from './services/firebase';
 import { doc, setDoc, updateDoc, collection } from 'firebase/firestore';
 import { evaluateBadges } from './services/achievements';
+import { HomeScreen } from './components/HomeScreen';
 import { Header } from './components/Header';
 import { BottomNavBar, NavTab } from './components/BottomNavBar';
 import { WorkdayRoutineTracker } from './components/WorkdayRoutineTracker';
@@ -38,7 +39,7 @@ import { PointsEarnedModal } from './components/PointsEarnedToast';
 import { OfflineIndicator } from './components/OfflineIndicator';
 
 function AppContent() {
-  const { profile, firebaseUser, updateUserProfile } = useAuth();
+  const { profile, firebaseUser, loading, isGuest, continueAsGuest, updateUserProfile } = useAuth();
   const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null);
   const [members, setMembers] = useState<LeaderboardMember[]>(() => storage.getLeaderboard());
   const [allLogs, setAllLogs] = useState<RoutineLog[]>(() => storage.getRoutineLogs());
@@ -78,6 +79,7 @@ function AppContent() {
       const codeFromUrl = params.get('code') || params.get('squad');
       if (codeFromUrl) {
         setJoinInviteCode(codeFromUrl.toUpperCase());
+        continueAsGuest();
         setShowJoinChallengeModal(true);
         // Clean query param
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -309,6 +311,35 @@ function AppContent() {
     setActiveTab('ranks');
   };
 
+  // 1. While Firebase Auth initializes persisted session from storage, show clean splash
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAF7F0] dark:bg-[#0B0D13] flex flex-col items-center justify-center p-4 selection:bg-amber-400/30 transition-colors">
+        <div className="w-14 h-14 rounded-3xl bg-amber-400 text-neutral-950 flex items-center justify-center font-black text-2xl shadow-xl shadow-amber-400/20 animate-pulse">
+          ⚡
+        </div>
+        <div className="mt-4 text-xs font-bold text-neutral-500 dark:text-neutral-400 tracking-widest uppercase font-mono">
+          MoveMates
+        </div>
+      </div>
+    );
+  }
+
+  // 2. If user is NOT logged in and has not chosen to preview as guest, show the new Welcome Home Screen
+  if (!firebaseUser && !isGuest) {
+    return (
+      <HomeScreen
+        onContinueAsGuest={continueAsGuest}
+        onEnterInviteCode={(code) => {
+          setJoinInviteCode(code);
+          continueAsGuest();
+          setShowJoinChallengeModal(true);
+        }}
+      />
+    );
+  }
+
+  // 3. User is logged in (persists across app exits) or exploring as guest
   return (
     <div className="min-h-screen bg-[#FAF7F0] dark:bg-[#0B0D13] text-neutral-900 dark:text-neutral-100 flex flex-col font-sans selection:bg-amber-400/30 transition-colors">
       <OfflineIndicator />

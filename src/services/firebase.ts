@@ -4,6 +4,8 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
+  setPersistence,
+  browserLocalPersistence,
   User as FirebaseUser,
 } from 'firebase/auth';
 import {
@@ -82,6 +84,11 @@ const app = getApps().length > 0 ? getApp() : initializeApp(activeConfig);
 // Initialize Firestore with configured databaseId
 export const db = getFirestore(app, activeConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
+
+// Explicitly configure browserLocalPersistence so users remain logged in across exits/restarts
+setPersistence(auth, browserLocalPersistence).catch((err) => {
+  console.warn('Failed to configure auth persistence:', err);
+});
 
 // Google Auth Provider configured for popup
 const googleProvider = new GoogleAuthProvider();
