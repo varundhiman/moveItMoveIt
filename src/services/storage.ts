@@ -1,10 +1,12 @@
-import { UserProfile, LeaderboardMember, RoutineLog, ActivityFeedItem, WorkdaySlot } from '../types';
+import { UserProfile, LeaderboardMember, RoutineLog, ActivityFeedItem, WorkdaySlot, PointBreakdown } from '../types';
+import { calculateRoutinePoints } from './points';
 
 const STORAGE_KEYS = {
-  USER_PROFILE: 'shiftmove_user_profile_v2',
-  ROUTINE_LOGS: 'shiftmove_routine_logs_v2',
-  LEADERBOARD_MEMBERS: 'shiftmove_leaderboard_members_v2',
-  ACTIVITY_FEED: 'shiftmove_activity_feed_v2',
+  USER_PROFILE: 'movemates_user_profile_v3',
+  ROUTINE_LOGS: 'movemates_routine_logs_v3',
+  LEADERBOARD_MEMBERS: 'movemates_leaderboard_members_v3',
+  ACTIVITY_FEED: 'movemates_activity_feed_v3',
+  ACTIVE_CHALLENGE: 'movemates_active_challenge_v3',
 };
 
 export const WORKDAY_SLOT_DEFS = [
@@ -18,154 +20,20 @@ export const WORKDAY_SLOT_DEFS = [
   { slotIndex: 7, startHour: 16, endHour: 17, timeLabel: '4:00 PM – 5:00 PM', shortLabel: '4–5 PM' },
 ];
 
-// Helper to construct sample ISO dates today
-function getTodayIsoAt(hour: number, minute: number): string {
-  const d = new Date();
-  d.setHours(hour, minute, 0, 0);
-  return d.toISOString();
-}
-
 export const INITIAL_USER: UserProfile = {
   id: 'user_me',
-  name: 'Varun D.',
+  name: 'Athlete',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  streakDays: 4,
-  todayRoutinesCount: 2,
-  totalPoints: 1250,
-  squadCode: 'SQUAD-95-MOVE',
-  squadName: 'Desk Breakers 9-to-5',
+  streakDays: 0,
+  todayRoutinesCount: 0,
+  totalPoints: 0,
+  squadCode: 'MOVE-9TO5',
+  squadName: '9-to-5 Workplace Mobility',
   reminderIntervalMinutes: 60,
   soundEnabled: true,
   voiceEnabled: true,
-  unlockedBadgeIds: ['early_bird', 'streak_3', 'perfect_posture'],
+  unlockedBadgeIds: [],
 };
-
-export const INITIAL_LOGS: RoutineLog[] = [
-  {
-    id: 'log_seed_1',
-    routineId: 'squats',
-    routineTitle: '10 Squats',
-    completedAt: getTodayIsoAt(9, 45), // 9:45 AM -> Slot 0 (9-10 AM)
-    isWithin9to5: true,
-    score: 150,
-    formScore: 96,
-    durationSeconds: 45,
-    slotIndex: 0,
-  },
-  {
-    id: 'log_seed_2',
-    routineId: 'pushups',
-    routineTitle: '10 Pushups',
-    completedAt: getTodayIsoAt(11, 20), // 11:20 AM -> Slot 2 (11-12 PM)
-    isWithin9to5: true,
-    score: 150,
-    formScore: 94,
-    durationSeconds: 40,
-    slotIndex: 2,
-  },
-];
-
-export const INITIAL_LEADERBOARD: LeaderboardMember[] = [
-  {
-    id: 'user_alex',
-    name: 'Alex Chen',
-    avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-    todayCompletedCount: 5,
-    todayRepsOrMinutes: 50,
-    streakDays: 7,
-    totalScore: 2150,
-    lastActiveTime: '24m ago',
-    lastRoutine: '10 Squats',
-    cheerCount: 12,
-    status: 'online',
-  },
-  {
-    id: 'user_priya',
-    name: 'Priya Sharma',
-    avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-    todayCompletedCount: 4,
-    todayRepsOrMinutes: 40,
-    streakDays: 5,
-    totalScore: 1820,
-    lastActiveTime: '45m ago',
-    lastRoutine: '20s Plank Hold',
-    cheerCount: 8,
-    status: 'online',
-  },
-  {
-    id: 'user_me',
-    name: 'Varun D.',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    isCurrentUser: true,
-    todayCompletedCount: 2,
-    todayRepsOrMinutes: 20,
-    streakDays: 4,
-    totalScore: 1250,
-    lastActiveTime: '11:20 AM',
-    lastRoutine: '10 Pushups',
-    cheerCount: 6,
-    status: 'active_now',
-  },
-  {
-    id: 'user_marcus',
-    name: 'Marcus Vance',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    todayCompletedCount: 3,
-    todayRepsOrMinutes: 30,
-    streakDays: 3,
-    totalScore: 1100,
-    lastActiveTime: '1h ago',
-    lastRoutine: '5 Min Walk',
-    cheerCount: 4,
-    status: 'away',
-  },
-  {
-    id: 'user_elena',
-    name: 'Elena Rostova',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-    todayCompletedCount: 1,
-    todayRepsOrMinutes: 10,
-    streakDays: 2,
-    totalScore: 680,
-    lastActiveTime: '2h ago',
-    lastRoutine: '20 Jumping Jacks',
-    cheerCount: 2,
-    status: 'away',
-  },
-];
-
-export const INITIAL_ACTIVITY: ActivityFeedItem[] = [
-  {
-    id: 'act_1',
-    userName: 'Alex Chen',
-    userAvatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&auto=format&fit=crop&q=80',
-    routineTitle: '10 Squats',
-    routineType: 'squats',
-    timeAgo: '24m ago',
-    timestamp: Date.now() - 24 * 60 * 1000,
-    cheers: 4,
-  },
-  {
-    id: 'act_2',
-    userName: 'Priya Sharma',
-    userAvatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
-    routineTitle: '20s Plank Hold',
-    routineType: 'plank',
-    timeAgo: '45m ago',
-    timestamp: Date.now() - 45 * 60 * 1000,
-    cheers: 3,
-  },
-  {
-    id: 'act_3',
-    userName: 'Marcus Vance',
-    userAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    routineTitle: '5 Min Walk',
-    routineType: 'walk',
-    timeAgo: '1h ago',
-    timestamp: Date.now() - 65 * 60 * 1000,
-    cheers: 2,
-  },
-];
 
 export const storage = {
   getUserProfile(): UserProfile {
@@ -188,9 +56,9 @@ export const storage = {
   getRoutineLogs(): RoutineLog[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.ROUTINE_LOGS);
-      return data ? JSON.parse(data) : INITIAL_LOGS;
+      return data ? JSON.parse(data) : [];
     } catch {
-      return INITIAL_LOGS;
+      return [];
     }
   },
 
@@ -219,23 +87,27 @@ export const storage = {
     }
 
     const slots: WorkdaySlot[] = WORKDAY_SLOT_DEFS.map((def) => {
-      // Find log in this slot
-      const logInSlot = logs.find((l) => {
-        const d = new Date(l.completedAt);
-        const h = d.getHours();
-        return h === def.startHour;
+      // Find matching log completed within this slot's time window today
+      const completedLog = logs.find((l) => {
+        const logDate = new Date(l.completedAt);
+        const logHour = logDate.getHours();
+        return logHour >= def.startHour && logHour < def.endHour;
       });
 
-      const isCompleted = !!logInSlot;
-      const isCurrent = def.slotIndex === currentSlotIndex;
-      const isPast = currentHour > def.startHour;
+      const isCompleted = !!completedLog;
+      const isCurrent = currentSlotIndex === def.slotIndex;
+      const isPast = currentHour >= def.endHour && !isCompleted;
 
       return {
-        ...def,
+        slotIndex: def.slotIndex,
+        startHour: def.startHour,
+        endHour: def.endHour,
+        timeLabel: def.timeLabel,
+        shortLabel: def.shortLabel,
         isCompleted,
         isCurrent,
         isPast,
-        completedLog: logInSlot,
+        completedLog,
       };
     });
 
@@ -248,12 +120,61 @@ export const storage = {
     };
   },
 
-  saveRoutineLog(log: RoutineLog): { updatedProfile: UserProfile; updatedMembers: LeaderboardMember[] } {
+  /**
+   * Checks whether the current local time is within the 9-to-5 workday challenge window.
+   */
+  isCurrentlyIn9to5(): {
+    inWindow: boolean;
+    currentSlotName: string;
+    timeRemainingStr: string;
+  } {
+    const now = new Date();
+    const hour = now.getHours();
+    const inWindow = hour >= 9 && hour < 17;
+
+    let currentSlotName = 'Outside 9–5 Window';
+    let timeRemainingStr = 'Starts at 9:00 AM';
+
+    if (inWindow) {
+      const slotIndex = hour - 9;
+      const def = WORKDAY_SLOT_DEFS[slotIndex];
+      currentSlotName = def ? def.timeLabel : 'Active Slot';
+
+      const windowEnd = new Date(now);
+      windowEnd.setHours(17, 0, 0, 0);
+      const diffMs = Math.max(0, windowEnd.getTime() - now.getTime());
+      const hoursLeft = Math.floor(diffMs / (1000 * 60 * 60));
+      const minsLeft = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      timeRemainingStr = `${hoursLeft}h ${minsLeft}m left`;
+    } else if (hour >= 17) {
+      timeRemainingStr = 'Window closed (5 PM)';
+    }
+
+    return {
+      inWindow,
+      currentSlotName,
+      timeRemainingStr,
+    };
+  },
+
+  /**
+   * Saves a routine log, determines slot index, computes exact points with bonuses, and updates streak
+   */
+  saveRoutineLog(log: RoutineLog, dailyTargetSlots: number = 5): {
+    updatedProfile: UserProfile;
+    updatedMembers: LeaderboardMember[];
+    pointBreakdown: PointBreakdown;
+  } {
     const logs = this.getRoutineLogs();
-    const logDate = new Date(log.completedAt);
-    const hour = logDate.getHours();
-    
-    // Assign slotIndex if within 9 to 5
+    const now = new Date(log.completedAt);
+    const hour = now.getHours();
+
+    // 1. Measure prior completed slots count
+    const priorTodayLogs = this.getTodayLogs(logs);
+    const priorSlotInfo = this.getTodayWorkdaySlots(priorTodayLogs);
+    const priorCompletedSlotsCount = priorSlotInfo.completedSlotsCount;
+
+    // Determine slot
     if (hour >= 9 && hour < 17) {
       log.slotIndex = hour - 9;
       log.isWithin9to5 = true;
@@ -268,19 +189,34 @@ export const storage = {
       console.error('Failed to save routine log', e);
     }
 
-    const todayLogs = this.getTodayLogs(logs);
-    const { completedSlotsCount } = this.getTodayWorkdaySlots(todayLogs);
+    // 2. Measure new completed slots count
+    const updatedTodayLogs = this.getTodayLogs(logs);
+    const updatedSlotInfo = this.getTodayWorkdaySlots(updatedTodayLogs);
+    const newCompletedSlotsCount = updatedSlotInfo.completedSlotsCount;
+
+    // 3. Compute points using the exact formula
+    const profile = this.getUserProfile();
+    const pointBreakdown = calculateRoutinePoints({
+      priorCompletedSlotsCount,
+      newCompletedSlotsCount,
+      dailyTargetSlots,
+      currentStreakDays: profile.streakDays,
+    });
+
+    log.score = pointBreakdown.totalEarned;
+    log.pointsBreakdown = pointBreakdown;
 
     // Update user profile
-    const profile = this.getUserProfile();
-    profile.todayRoutinesCount = completedSlotsCount;
-    profile.totalPoints += log.score;
-    if (completedSlotsCount >= 5 && profile.streakDays < 5) {
+    profile.todayRoutinesCount = newCompletedSlotsCount;
+    profile.totalPoints += pointBreakdown.totalEarned;
+
+    // If quota met for the first time today, increment streak
+    if (priorCompletedSlotsCount < dailyTargetSlots && newCompletedSlotsCount >= dailyTargetSlots) {
       profile.streakDays += 1;
     }
     this.saveUserProfile(profile);
 
-    // Update leaderboard
+    // Update local leaderboard
     const members = this.getLeaderboard();
     const myIndex = members.findIndex((m) => m.isCurrentUser || m.id === profile.id);
     if (myIndex !== -1) {
@@ -288,16 +224,33 @@ export const storage = {
         ...members[myIndex],
         name: profile.name,
         avatar: profile.avatar,
-        todayCompletedCount: completedSlotsCount,
-        todayRepsOrMinutes: members[myIndex].todayRepsOrMinutes + 10,
+        todayCompletedCount: newCompletedSlotsCount,
+        todayActivitiesCount: (members[myIndex].todayActivitiesCount || 0) + 1,
+        todayRepsOrMinutes: (members[myIndex].todayRepsOrMinutes || 0) + 10,
         totalScore: profile.totalPoints,
         streakDays: profile.streakDays,
         lastActiveTime: 'Just now',
         lastRoutine: log.routineTitle,
         status: 'active_now',
       };
-      this.saveLeaderboard(members);
+    } else {
+      members.unshift({
+        id: profile.id,
+        name: profile.name,
+        avatar: profile.avatar,
+        isCurrentUser: true,
+        todayCompletedCount: newCompletedSlotsCount,
+        todayActivitiesCount: 1,
+        todayRepsOrMinutes: 10,
+        streakDays: profile.streakDays,
+        totalScore: profile.totalPoints,
+        lastActiveTime: 'Just now',
+        lastRoutine: log.routineTitle,
+        cheerCount: 0,
+        status: 'active_now',
+      });
     }
+    this.saveLeaderboard(members);
 
     // Add activity item
     this.addActivityItem({
@@ -309,17 +262,39 @@ export const storage = {
       timeAgo: 'Just now',
       timestamp: Date.now(),
       cheers: 0,
+      pointsEarned: pointBreakdown.totalEarned,
     });
 
-    return { updatedProfile: profile, updatedMembers: members };
+    return { updatedProfile: profile, updatedMembers: members, pointBreakdown };
   },
 
   getLeaderboard(): LeaderboardMember[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.LEADERBOARD_MEMBERS);
-      return data ? JSON.parse(data) : INITIAL_LEADERBOARD;
+      if (data) {
+        return JSON.parse(data);
+      }
+      // Start with ONLY the current user (no mock friends!)
+      const profile = this.getUserProfile();
+      return [
+        {
+          id: profile.id,
+          name: profile.name,
+          avatar: profile.avatar,
+          isCurrentUser: true,
+          todayCompletedCount: profile.todayRoutinesCount || 0,
+          todayActivitiesCount: 0,
+          todayRepsOrMinutes: 0,
+          streakDays: profile.streakDays || 0,
+          totalScore: profile.totalPoints || 0,
+          lastActiveTime: 'Today',
+          lastRoutine: 'Ready for routine',
+          cheerCount: 0,
+          status: 'online',
+        },
+      ];
     } catch {
-      return INITIAL_LEADERBOARD;
+      return [];
     }
   },
 
@@ -331,91 +306,34 @@ export const storage = {
     }
   },
 
-  addFriendToLeaderboard(name: string): LeaderboardMember[] {
-    const members = this.getLeaderboard();
-    const avatars = [
-      'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-    ];
-    const newMember: LeaderboardMember = {
-      id: `friend_${Date.now()}`,
-      name,
-      avatar: avatars[Math.floor(Math.random() * avatars.length)],
-      todayCompletedCount: Math.floor(Math.random() * 3) + 1,
-      todayRepsOrMinutes: 20,
-      streakDays: 1,
-      totalScore: 300,
-      lastActiveTime: 'Just joined',
-      lastRoutine: '10 Squats',
-      cheerCount: 0,
-      status: 'online',
-    };
-    const updated = [...members, newMember];
-    this.saveLeaderboard(updated);
-    return updated;
+  getActivityFeed(): ActivityFeedItem[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.ACTIVITY_FEED);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  addActivityItem(item: ActivityFeedItem): void {
+    try {
+      const feed = this.getActivityFeed();
+      feed.unshift(item);
+      localStorage.setItem(STORAGE_KEYS.ACTIVITY_FEED, JSON.stringify(feed.slice(0, 50)));
+    } catch (e) {
+      console.error('Failed to add activity item', e);
+    }
   },
 
   cheerMember(memberId: string): LeaderboardMember[] {
     const members = this.getLeaderboard();
-    const updated = members.map((m) => (m.id === memberId ? { ...m, cheerCount: m.cheerCount + 1 } : m));
+    const updated = members.map((m) => {
+      if (m.id === memberId) {
+        return { ...m, cheerCount: (m.cheerCount || 0) + 1 };
+      }
+      return m;
+    });
     this.saveLeaderboard(updated);
     return updated;
-  },
-
-  getActivityFeed(): ActivityFeedItem[] {
-    try {
-      const data = localStorage.getItem(STORAGE_KEYS.ACTIVITY_FEED);
-      return data ? JSON.parse(data) : INITIAL_ACTIVITY;
-    } catch {
-      return INITIAL_ACTIVITY;
-    }
-  },
-
-  addActivityItem(item: ActivityFeedItem): ActivityFeedItem[] {
-    const feed = this.getActivityFeed();
-    feed.unshift(item);
-    const trimmed = feed.slice(0, 20);
-    try {
-      localStorage.setItem(STORAGE_KEYS.ACTIVITY_FEED, JSON.stringify(trimmed));
-    } catch (e) {
-      console.error('Failed to save activity feed', e);
-    }
-    return trimmed;
-  },
-
-  isCurrentlyIn9to5(): { inWindow: boolean; timeRemainingStr: string; currentHour: number } {
-    const now = new Date();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
-
-    const startMinutes = 9 * 60; // 9:00 AM = 540
-    const endMinutes = 17 * 60; // 5:00 PM = 1020
-    const currentMinutes = hour * 60 + minute;
-
-    const inWindow = currentMinutes >= startMinutes && currentMinutes < endMinutes;
-
-    if (inWindow) {
-      const minutesLeft = endMinutes - currentMinutes;
-      const hoursLeft = Math.floor(minutesLeft / 60);
-      const remainingMinutes = minutesLeft % 60;
-      const timeRemainingStr = `${hoursLeft}h ${remainingMinutes}m remaining`;
-      return { inWindow, timeRemainingStr, currentHour: hour };
-    } else if (currentMinutes < startMinutes) {
-      const minutesUntil = startMinutes - currentMinutes;
-      const hoursUntil = Math.floor(minutesUntil / 60);
-      const remainingMinutes = minutesUntil % 60;
-      return {
-        inWindow: false,
-        timeRemainingStr: `Opens in ${hoursUntil}h ${remainingMinutes}m`,
-        currentHour: hour,
-      };
-    } else {
-      return {
-        inWindow: false,
-        timeRemainingStr: 'Challenge ended at 5:00 PM',
-        currentHour: hour,
-      };
-    }
   },
 };

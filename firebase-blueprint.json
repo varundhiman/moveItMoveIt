@@ -2,7 +2,7 @@
   "entities": {
     "UserProfile": {
       "title": "UserProfile",
-      "description": "User profile with workday mobility stats and squad membership",
+      "description": "User profile with workday mobility stats and challenge membership",
       "type": "object",
       "properties": {
         "userId": {
@@ -30,11 +30,16 @@
         },
         "todaySlotsCount": {
           "type": "number",
-          "description": "Hourly time slots completed today (out of 5)"
+          "description": "Hourly time slots completed today"
         },
         "totalPoints": {
           "type": "number",
           "description": "Total XP / points earned"
+        },
+        "currentChallengeId": {
+          "type": "string",
+          "description": "ID of active challenge",
+          "maxLength": 64
         },
         "squadCode": {
           "type": "string",
@@ -70,9 +75,180 @@
       },
       "required": ["userId", "name", "email", "todaySlotsCount", "streakDays"]
     },
+    "Challenge": {
+      "title": "Challenge",
+      "description": "Mobility challenge with customizable daily quota and invite code",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Challenge unique identifier"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of challenge",
+          "maxLength": 100
+        },
+        "description": {
+          "type": "string",
+          "description": "Challenge description or goal",
+          "maxLength": 300
+        },
+        "inviteCode": {
+          "type": "string",
+          "description": "Shareable invite code",
+          "maxLength": 32
+        },
+        "dailyTargetSlots": {
+          "type": "number",
+          "description": "Configurable daily activity quota (e.g. 3, 5, etc.)"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "UID of creator"
+        },
+        "creatorName": {
+          "type": "string",
+          "description": "Display name of creator",
+          "maxLength": 100
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Start date YYYY-MM-DD"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "End date YYYY-MM-DD"
+        },
+        "memberCount": {
+          "type": "number",
+          "description": "Total number of members"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO creation timestamp"
+        }
+      },
+      "required": ["name", "inviteCode", "dailyTargetSlots", "createdBy", "createdAt"]
+    },
+    "ChallengeMember": {
+      "title": "ChallengeMember",
+      "description": "Participant in a challenge with real-time stats and points",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "UID of participant"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name",
+          "maxLength": 100
+        },
+        "avatar": {
+          "type": "string",
+          "description": "Avatar photo URL",
+          "maxLength": 512
+        },
+        "totalPoints": {
+          "type": "number",
+          "description": "Total points accumulated in this challenge"
+        },
+        "todayCompletedCount": {
+          "type": "number",
+          "description": "Slots completed today"
+        },
+        "todayActivitiesCount": {
+          "type": "number",
+          "description": "Total routine activities performed today"
+        },
+        "streakDays": {
+          "type": "number",
+          "description": "Consecutive days meeting daily quota"
+        },
+        "lastRoutine": {
+          "type": "string",
+          "description": "Last routine performed",
+          "maxLength": 64
+        },
+        "lastActiveTime": {
+          "type": "string",
+          "description": "ISO timestamp of last activity"
+        },
+        "cheerCount": {
+          "type": "number",
+          "description": "Cheers received from teammates"
+        },
+        "joinedAt": {
+          "type": "string",
+          "description": "ISO timestamp when joined"
+        }
+      },
+      "required": ["userId", "name", "totalPoints", "todayCompletedCount", "streakDays"]
+    },
+    "ChallengeActivity": {
+      "title": "ChallengeActivity",
+      "description": "Real-time activity log item in a challenge",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Activity log ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "UID of user who performed routine"
+        },
+        "userName": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 100
+        },
+        "userAvatar": {
+          "type": "string",
+          "description": "Avatar URL",
+          "maxLength": 512
+        },
+        "routineId": {
+          "type": "string",
+          "description": "ID of mobility routine",
+          "enum": ["squats", "pushups", "jumping_jacks", "plank", "walk"]
+        },
+        "routineTitle": {
+          "type": "string",
+          "description": "Human title of routine",
+          "maxLength": 64
+        },
+        "completedAt": {
+          "type": "string",
+          "description": "ISO timestamp"
+        },
+        "isWithin9to5": {
+          "type": "boolean",
+          "description": "Whether performed during workday challenge window"
+        },
+        "slotIndex": {
+          "type": "number",
+          "description": "Hour slot index 0-7"
+        },
+        "pointsEarned": {
+          "type": "number",
+          "description": "Points earned for this activity (e.g. 5 base + bonuses)"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "description": "Duration in seconds"
+        },
+        "cheers": {
+          "type": "number",
+          "description": "Number of cheers received"
+        }
+      },
+      "required": ["userId", "userName", "routineId", "routineTitle", "completedAt", "pointsEarned"]
+    },
     "RoutineLog": {
       "title": "RoutineLog",
-      "description": "Record of a verified completed mobility routine",
+      "description": "Record of a verified completed mobility routine for a user",
       "type": "object",
       "properties": {
         "userId": {
@@ -115,63 +291,28 @@
         }
       },
       "required": ["userId", "routineId", "routineTitle", "completedAt", "score"]
-    },
-    "SquadActivity": {
-      "title": "SquadActivity",
-      "description": "Public activity log item for squad feed and cheers",
-      "type": "object",
-      "properties": {
-        "userId": {
-          "type": "string",
-          "description": "UID of user"
-        },
-        "userName": {
-          "type": "string",
-          "description": "Display name of user",
-          "maxLength": 100
-        },
-        "userAvatar": {
-          "type": "string",
-          "description": "Avatar of user",
-          "maxLength": 512
-        },
-        "routineTitle": {
-          "type": "string",
-          "description": "Routine performed",
-          "maxLength": 64
-        },
-        "routineType": {
-          "type": "string",
-          "description": "Type of routine"
-        },
-        "timeAgo": {
-          "type": "string",
-          "description": "Human friendly time"
-        },
-        "timestamp": {
-          "type": "number",
-          "description": "Epoch timestamp"
-        },
-        "cheers": {
-          "type": "number",
-          "description": "Number of cheers received"
-        }
-      },
-      "required": ["userId", "userName", "routineTitle", "timestamp"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "UserProfile",
-      "description": "User profile with 9-to-5 mobility challenge scores"
+      "description": "User profile with mobility challenge scores"
     },
     "/users/{userId}/logs/{logId}": {
       "schema": "RoutineLog",
       "description": "Verified mobility routine logs for user"
     },
-    "/activity/{activityId}": {
-      "schema": "SquadActivity",
-      "description": "Shared activity feed items for squad"
+    "/challenges/{challengeId}": {
+      "schema": "Challenge",
+      "description": "Active challenges with configurable daily quotas and invite codes"
+    },
+    "/challenges/{challengeId}/members/{userId}": {
+      "schema": "ChallengeMember",
+      "description": "Participant live ranking and points within challenge"
+    },
+    "/challenges/{challengeId}/activities/{activityId}": {
+      "schema": "ChallengeActivity",
+      "description": "Live real-time feed of routines completed in challenge"
     }
   }
 }

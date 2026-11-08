@@ -17,6 +17,8 @@ interface WorkdayRoutineTrackerProps {
   todayLogs: RoutineLog[];
   inWindow: boolean;
   timeRemainingStr: string;
+  dailyTargetSlots?: number;
+  challengeName?: string;
   onStartMove: () => void;
 }
 
@@ -26,12 +28,14 @@ export const WorkdayRoutineTracker: React.FC<WorkdayRoutineTrackerProps> = ({
   todayLogs,
   inWindow,
   timeRemainingStr,
+  dailyTargetSlots = 5,
+  challengeName,
   onStartMove,
 }) => {
   const [showScheduleDetails, setShowScheduleDetails] = useState(false);
   const [selectedSlotForDetail, setSelectedSlotForDetail] = useState<WorkdaySlot | null>(null);
 
-  const targetSlots = 5;
+  const targetSlots = Math.max(1, dailyTargetSlots);
   const isGoalMet = completedSlotsCount >= targetSlots;
   const remainingSlots = Math.max(0, targetSlots - completedSlotsCount);
 
@@ -64,8 +68,9 @@ export const WorkdayRoutineTracker: React.FC<WorkdayRoutineTrackerProps> = ({
 
       {/* 2. Modern Hero Progress Card */}
       <section className="bg-gradient-to-br from-amber-400 via-amber-400 to-amber-500 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950 border border-amber-300 dark:border-amber-500/30 rounded-3xl p-6 shadow-lg shadow-amber-500/10 dark:shadow-xl dark:shadow-black/40 relative overflow-hidden transition-all">
-        <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-900/80 dark:text-amber-400/90 mb-2">
-          Today's Goal · 5 Hourly Slots
+        <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-neutral-900/80 dark:text-amber-400/90 mb-2">
+          <span>{challengeName || "Workday Mobility"}</span>
+          <span>Goal: {targetSlots} Slots/Day</span>
         </div>
 
         <div className="flex items-baseline justify-between gap-4">
@@ -81,15 +86,18 @@ export const WorkdayRoutineTracker: React.FC<WorkdayRoutineTrackerProps> = ({
             </div>
             <div className="text-xs font-semibold text-neutral-900/80 dark:text-neutral-400 mt-0.5">
               {isGoalMet
-                ? 'Challenge Complete! 🎉'
-                : `${remainingSlots} more to hit daily target`}
+                ? 'Daily Quota Achieved! 🏆'
+                : `${remainingSlots} more to hit daily quota`}
             </div>
           </div>
         </div>
 
-        {/* 5-Segmented Modern Bar */}
-        <div className="mt-5 grid grid-cols-5 gap-2">
-          {[0, 1, 2, 3, 4].map((idx) => {
+        {/* Dynamic Segmented Modern Bar */}
+        <div
+          className="mt-5 grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${targetSlots}, minmax(0, 1fr))` }}
+        >
+          {Array.from({ length: targetSlots }).map((_, idx) => {
             const isFilled = idx < completedSlotsCount;
             return (
               <div

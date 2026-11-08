@@ -18,10 +18,20 @@ export interface RoutineLog {
   routineTitle: string;
   completedAt: string; // ISO string
   isWithin9to5: boolean;
-  score: number;
+  score: number; // Points earned (5 base + potential 5 quota bonus + 2 streak bonus)
   formScore: number; // 0-100%
   durationSeconds: number;
   slotIndex?: number; // 0 to 7 (corresponds to 9-10, 10-11, ... 16-17)
+  challengeId?: string;
+  pointsBreakdown?: PointBreakdown;
+}
+
+export interface PointBreakdown {
+  basePoints: number; // 5 pts per routine
+  dailyQuotaBonus: number; // 5 pts if quota met for today
+  streakBonus: number; // 2 pts if streak >= 3 days when quota met
+  totalEarned: number;
+  message?: string;
 }
 
 export interface WorkdaySlot {
@@ -51,6 +61,20 @@ export interface DigitalBadge {
   };
 }
 
+export interface Challenge {
+  id: string;
+  name: string;
+  description: string;
+  inviteCode: string;
+  dailyTargetSlots: number; // Configurable daily activity quota, e.g. 3, 5, etc.
+  createdBy: string;
+  creatorName: string;
+  startDate: string;
+  endDate: string;
+  memberCount: number;
+  createdAt: string;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -58,6 +82,7 @@ export interface UserProfile {
   streakDays: number;
   todayRoutinesCount: number;
   totalPoints: number;
+  currentChallengeId?: string;
   squadCode: string;
   squadName: string;
   reminderIntervalMinutes: number;
@@ -71,8 +96,9 @@ export interface LeaderboardMember {
   name: string;
   avatar: string;
   isCurrentUser?: boolean;
-  todayCompletedCount: number; // Number of slots completed today (out of 5)
-  todayRepsOrMinutes: number;
+  todayCompletedCount: number; // Number of unique slots completed today
+  todayActivitiesCount?: number; // Total routines completed today
+  todayRepsOrMinutes?: number;
   streakDays: number;
   totalScore: number;
   lastActiveTime: string;
@@ -80,10 +106,12 @@ export interface LeaderboardMember {
   cheerCount: number;
   status: 'online' | 'active_now' | 'away';
   badgeCount?: number;
+  joinedAt?: string;
 }
 
 export interface ActivityFeedItem {
   id: string;
+  userId?: string;
   userName: string;
   userAvatar: string;
   routineTitle: string;
@@ -91,6 +119,7 @@ export interface ActivityFeedItem {
   timeAgo: string;
   timestamp: number;
   cheers: number;
+  pointsEarned?: number;
 }
 
 export interface Point2D {

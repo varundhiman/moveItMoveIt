@@ -52,16 +52,40 @@ service cloud.firestore {
       }
     }
 
-    // Shared Activity Stream & Cheers
-    match /activity/{activityId} {
+    // Challenges Collection
+    match /challenges/{challengeId} {
       allow get, list: if isSignedIn();
       allow create: if isSignedIn()
-        && incoming().userId == request.auth.uid
-        && incoming().routineTitle is string && incoming().routineTitle.size() <= 64
-        && incoming().timestamp is number;
-      allow update: if isSignedIn()
-        && incoming().diff(existing()).affectedKeys().hasOnly(['cheers']);
-      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+        && incoming().createdBy == request.auth.uid
+        && incoming().name is string && incoming().name.size() <= 100
+        && incoming().dailyTargetSlots is number
+        && incoming().inviteCode is string && incoming().inviteCode.size() <= 32;
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn() && existing().createdBy == request.auth.uid;
+
+      // Challenge Members Subcollection (Real Leaderboard)
+      match /members/{memberUserId} {
+        allow get, list: if isSignedIn();
+        allow create: if isSignedIn() && request.auth.uid == memberUserId
+          && incoming().userId == request.auth.uid
+          && incoming().name is string && incoming().name.size() <= 100;
+        allow update: if isSignedIn() && (
+          (request.auth.uid == memberUserId && incoming().userId == existing().userId) ||
+          (incoming().diff(existing()).affectedKeys().hasOnly(['cheerCount']))
+        );
+        allow delete: if isSignedIn() && request.auth.uid == memberUserId;
+      }
+
+      // Challenge Real-time Activities Subcollection
+      match /activities/{activityId} {
+        allow get, list: if isSignedIn();
+        allow create: if isSignedIn()
+          && incoming().userId == request.auth.uid
+          && incoming().routineTitle is string && incoming().routineTitle.size() <= 64;
+        allow update: if isSignedIn()
+          && incoming().diff(existing()).affectedKeys().hasOnly(['cheers']);
+        allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+      }
     }
   }
 }
