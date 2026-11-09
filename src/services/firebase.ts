@@ -6,6 +6,9 @@ import {
   signOut,
   setPersistence,
   browserLocalPersistence,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
   User as FirebaseUser,
 } from 'firebase/auth';
 import {
@@ -102,6 +105,36 @@ export async function loginWithGoogle(): Promise<FirebaseUser> {
     return result.user;
   } catch (error) {
     console.error('Google Sign-In failed:', error);
+    throw error;
+  }
+}
+
+export async function registerWithEmail(
+  email: string,
+  pass: string,
+  displayName?: string
+): Promise<FirebaseUser> {
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+    if (displayName && displayName.trim() && cred.user) {
+      await updateProfile(cred.user, { displayName: displayName.trim() });
+    }
+    return cred.user;
+  } catch (error) {
+    console.error('Email Registration failed:', error);
+    throw error;
+  }
+}
+
+export async function loginWithEmail(
+  email: string,
+  pass: string
+): Promise<FirebaseUser> {
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
+    return cred.user;
+  } catch (error) {
+    console.error('Email Sign-In failed:', error);
     throw error;
   }
 }

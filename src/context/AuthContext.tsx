@@ -1,7 +1,16 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { auth, db, loginWithGoogle, logoutUser, handleFirestoreError, OperationType } from '../services/firebase';
+import {
+  auth,
+  db,
+  loginWithGoogle,
+  loginWithEmail,
+  registerWithEmail,
+  logoutUser,
+  handleFirestoreError,
+  OperationType,
+} from '../services/firebase';
 import { UserProfile } from '../types';
 import { storage, INITIAL_USER } from '../services/storage';
 
@@ -11,6 +20,8 @@ interface AuthContextType {
   loading: boolean;
   isGuest: boolean;
   signIn: () => Promise<void>;
+  signInWithEmail: (email: string, pass: string) => Promise<void>;
+  signUpWithEmail: (email: string, pass: string, name?: string) => Promise<void>;
   signOut: () => Promise<void>;
   continueAsGuest: () => void;
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
@@ -111,6 +122,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithEmail = async (email: string, pass: string) => {
+    try {
+      const user = await loginWithEmail(email, pass);
+      setFirebaseUser(user);
+      setIsGuest(false);
+    } catch (err) {
+      console.error('Failed to sign in with email', err);
+      throw err;
+    }
+  };
+
+  const signUpWithEmail = async (email: string, pass: string, name?: string) => {
+    try {
+      const user = await registerWithEmail(email, pass, name);
+      setFirebaseUser(user);
+      setIsGuest(false);
+    } catch (err) {
+      console.error('Failed to register with email', err);
+      throw err;
+    }
+  };
+
   const signOut = async () => {
     try {
       await logoutUser();
@@ -161,6 +194,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         isGuest,
         signIn,
+        signInWithEmail,
+        signUpWithEmail,
         signOut,
         continueAsGuest,
         updateUserProfile,
