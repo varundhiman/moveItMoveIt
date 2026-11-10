@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 import {
   Sun,
   Moon,
@@ -9,6 +10,8 @@ import {
   Mail,
   Lock,
   User,
+  Smartphone,
+  X,
 } from 'lucide-react';
 
 interface HomeScreenProps {
@@ -22,6 +25,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   const { signIn, signInWithEmail, signUpWithEmail } = useAuth();
   const { theme, toggleTheme } = useTheme();
+
+  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
+  const [showInstallGuide, setShowInstallGuide] = useState(false);
 
   // Auth mode: 'signin' | 'signup'
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
@@ -272,8 +278,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </button>
           </div>
 
-          {/* Quick Links: Guest & Invite Code */}
-          <div className="space-y-1.5 max-w-xs mx-auto text-center">
+          {/* Quick Links: Guest & Invite Code & Phone Install */}
+          <div className="space-y-2 max-w-xs mx-auto text-center pt-1">
+            {!isInstalled && (
+              <button
+                type="button"
+                onClick={async () => {
+                  if (isInstallable) {
+                    await install();
+                  } else {
+                    setShowInstallGuide(true);
+                  }
+                }}
+                className="w-full py-2 px-3 rounded-2xl bg-amber-400/15 hover:bg-amber-400/25 border border-amber-400/40 text-neutral-900 dark:text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 modern-press transition"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Install as Phone App (No Browser Bar)</span>
+              </button>
+            )}
+
             {onContinueAsGuest && (
               <button
                 type="button"
@@ -321,6 +344,60 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
           <span>Private on-device AI camera tracking</span>
         </div>
+
+        {/* Phone Install Guide Modal */}
+        {showInstallGuide && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-neutral-900 dark:text-white">
+            <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-neutral-100 dark:border-neutral-800">
+                <div className="flex items-center gap-2">
+                  <Smartphone className="w-5 h-5 text-amber-500" />
+                  <h3 className="text-base font-bold">Install as Phone App</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowInstallGuide(false)}
+                  className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">
+                <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700">
+                  <div className="font-bold text-neutral-900 dark:text-white mb-1">
+                    📱 On Android (Chrome):
+                  </div>
+                  <ol className="list-decimal list-inside space-y-1 text-neutral-600 dark:text-neutral-400">
+                    <li>Tap the <strong>3 dots (⋮)</strong> menu in the top right of Chrome.</li>
+                    <li>Tap <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.</li>
+                    <li>Tap <strong>Install</strong>. MoveMates will install to your app drawer and open full screen without Chrome bars!</li>
+                  </ol>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700">
+                  <div className="font-bold text-neutral-900 dark:text-white mb-1">
+                    🍏 On iPhone (Safari):
+                  </div>
+                  <ol className="list-decimal list-inside space-y-1 text-neutral-600 dark:text-neutral-400">
+                    <li>Open this URL in <strong>Safari</strong>.</li>
+                    <li>Tap the <strong>Share</strong> button (box with up arrow).</li>
+                    <li>Scroll down and tap <strong>"Add to Home Screen"</strong>.</li>
+                    <li>Tap <strong>Add</strong>. MoveMates will launch full screen with no Safari browser bars!</li>
+                  </ol>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowInstallGuide(false)}
+                className="w-full py-3 rounded-2xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 font-bold text-xs modern-press"
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
