@@ -41,8 +41,8 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   const { playRepDing } = useAudioFeedback(user.soundEnabled, user.voiceEnabled);
 
   const targetSlots = challenge?.dailyTargetSlots || 5;
-  const inviteCode = challenge?.inviteCode || user.squadCode || 'MOVE-9TO5';
-  const challengeTitle = challenge?.name || user.squadName || '9-to-5 Workplace Mobility';
+  const inviteCode = challenge?.inviteCode || user.squadCode || '';
+  const challengeTitle = challenge?.name || user.squadName || 'Workday Mobility Challenge';
 
   // Sort members: 1. Total score descending, 2. Today's completed slots descending
   const sortedMembers = [...members].sort((a, b) => {
@@ -149,26 +149,45 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
           </div>
         </div>
 
-        {/* Invite Code & Share Bar */}
-        <div className="flex items-center justify-between gap-2 p-2.5 bg-white/80 dark:bg-neutral-800/80 rounded-2xl border border-neutral-200/80 dark:border-neutral-700/60 text-xs">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400">
-              Invite Code:
-            </span>
-            <code className="font-mono font-bold text-amber-600 dark:text-amber-400 tracking-wider">
-              {inviteCode}
-            </code>
-          </div>
+        {/* Invite Code & Share Bar (or Create/Join when no challenge active) */}
+        {inviteCode ? (
+          <div className="flex items-center justify-between gap-2 p-2.5 bg-white/80 dark:bg-neutral-800/80 rounded-2xl border border-neutral-200/80 dark:border-neutral-700/60 text-xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400">
+                Invite Code:
+              </span>
+              <code className="font-mono font-bold text-amber-600 dark:text-amber-400 tracking-wider">
+                {inviteCode}
+              </code>
+            </div>
 
-          <button
-            type="button"
-            onClick={handleCopyInvite}
-            className="px-3 py-1 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold transition modern-press flex items-center gap-1 shrink-0"
-          >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copied' : 'Share Code'}</span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={handleCopyInvite}
+              className="px-3 py-1 rounded-xl bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 text-xs font-bold transition modern-press flex items-center gap-1 shrink-0"
+            >
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? 'Copied' : 'Share Code'}</span>
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onCreateChallenge}
+              className="flex-1 py-2.5 px-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-neutral-950 font-bold text-xs transition modern-press shadow-xs"
+            >
+              + Create Challenge
+            </button>
+            <button
+              type="button"
+              onClick={onJoinChallenge}
+              className="flex-1 py-2.5 px-3 rounded-2xl bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white font-bold text-xs transition modern-press border border-neutral-200 dark:border-neutral-700"
+            >
+              Join with Code
+            </button>
+          </div>
+        )}
       </section>
 
       {/* 3. Official Point System Summary Banner */}

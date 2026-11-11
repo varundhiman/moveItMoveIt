@@ -47,7 +47,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
   const avgFormScore =
     allLogs.length > 0
       ? Math.round(allLogs.reduce((sum, l) => sum + (l.formScore || 95), 0) / allLogs.length)
-      : 96;
+      : 0;
 
   // Routine variety breakdown
   const routineCounts: { [key: string]: number } = {};
@@ -144,7 +144,9 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             {quotaMetDaysCount} <span className="text-xs text-neutral-500 font-sans">days</span>
           </div>
           <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-            {daySummaries.length > 0 ? `${Math.round((quotaMetDaysCount / daySummaries.length) * 100)}% consistency` : '100%'}
+            {quotaMetDaysCount > 0 && daySummaries.length > 0
+              ? `${Math.round((quotaMetDaysCount / daySummaries.length) * 100)}% consistency`
+              : '0% consistency'}
           </span>
         </div>
 
@@ -417,34 +419,40 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
           <span>Mobility Routine Variety</span>
         </h2>
 
-        <div className="space-y-2.5">
-          {Object.keys(routineMetaMap).map((id) => {
-            const meta = routineMetaMap[id];
-            const count = routineCounts[id] || 0;
-            const percentage = totalMoves > 0 ? Math.round((count / totalMoves) * 100) : 0;
+        {totalMoves === 0 ? (
+          <div className="p-5 text-center text-xs text-neutral-400 bg-neutral-50 dark:bg-[#1F242D]/50 rounded-2xl border border-dashed border-neutral-200 dark:border-neutral-700">
+            No routines completed yet. Start your first move on the Radar screen!
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {Object.keys(routineMetaMap).map((id) => {
+              const meta = routineMetaMap[id];
+              const count = routineCounts[id] || 0;
+              const percentage = totalMoves > 0 ? Math.round((count / totalMoves) * 100) : 0;
 
-            return (
-              <div key={id} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300 font-medium">
-                    {meta.icon}
-                    <span>{meta.label}</span>
+              return (
+                <div key={id} className="space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 text-neutral-700 dark:text-neutral-300 font-medium">
+                      {meta.icon}
+                      <span>{meta.label}</span>
+                    </div>
+                    <span className="text-neutral-400 font-mono font-bold text-[11px]">
+                      {count} moves ({percentage}%)
+                    </span>
                   </div>
-                  <span className="text-neutral-400 font-mono font-bold text-[11px]">
-                    {count} moves ({percentage}%)
-                  </span>
-                </div>
 
-                <div className="w-full h-2 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${meta.barColor}`}
-                    style={{ width: `${percentage}%` }}
-                  />
+                  <div className="w-full h-2 rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${meta.barColor}`}
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
     </div>
   );

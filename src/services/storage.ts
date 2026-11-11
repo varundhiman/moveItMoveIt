@@ -2,12 +2,28 @@ import { UserProfile, LeaderboardMember, RoutineLog, ActivityFeedItem, WorkdaySl
 import { calculateRoutinePoints } from './points';
 
 const STORAGE_KEYS = {
-  USER_PROFILE: 'movemates_user_profile_v3',
-  ROUTINE_LOGS: 'movemates_routine_logs_v3',
-  LEADERBOARD_MEMBERS: 'movemates_leaderboard_members_v3',
-  ACTIVITY_FEED: 'movemates_activity_feed_v3',
-  ACTIVE_CHALLENGE: 'movemates_active_challenge_v3',
+  USER_PROFILE: 'movemates_user_profile_v5',
+  ROUTINE_LOGS: 'movemates_routine_logs_v5',
+  LEADERBOARD_MEMBERS: 'movemates_leaderboard_members_v5',
+  ACTIVITY_FEED: 'movemates_activity_feed_v5',
+  ACTIVE_CHALLENGE: 'movemates_active_challenge_v5',
 };
+
+// Purge any stale mocked data from previous iterations in browser storage
+if (typeof window !== 'undefined') {
+  try {
+    [
+      'movemates_user_profile_v3',
+      'movemates_user_profile_v4',
+      'movemates_routine_logs_v3',
+      'movemates_routine_logs_v4',
+      'movemates_leaderboard_members_v3',
+      'movemates_leaderboard_members_v4',
+    ].forEach((k) => {
+      localStorage.removeItem(k);
+    });
+  } catch {}
+}
 
 export const WORKDAY_SLOT_DEFS = [
   { slotIndex: 0, startHour: 9, endHour: 10, timeLabel: '9:00 AM – 10:00 AM', shortLabel: '9–10 AM' },
@@ -20,91 +36,19 @@ export const WORKDAY_SLOT_DEFS = [
   { slotIndex: 7, startHour: 16, endHour: 17, timeLabel: '4:00 PM – 5:00 PM', shortLabel: '4–5 PM' },
 ];
 
-function createSeedPastLog(
-  id: string,
-  daysAgo: number,
-  hour: number,
-  minute: number,
-  routineId: 'squats' | 'pushups' | 'jumping_jacks' | 'plank' | 'walk',
-  routineTitle: string,
-  formScore: number,
-  durationSeconds: number,
-  score: number = 5
-): RoutineLog {
-  const d = new Date();
-  d.setDate(d.getDate() - daysAgo);
-  d.setHours(hour, minute, 0, 0);
-
-  return {
-    id,
-    routineId,
-    routineTitle,
-    completedAt: d.toISOString(),
-    isWithin9to5: true,
-    score,
-    formScore,
-    durationSeconds,
-    slotIndex: hour - 9,
-    pointsBreakdown: {
-      basePoints: 5,
-      dailyQuotaBonus: hour === 16 ? 5 : 0,
-      streakBonus: hour === 16 ? 2 : 0,
-      totalEarned: score,
-    },
-  };
-}
-
-function generateInitialSeedLogs(): RoutineLog[] {
-  return [
-    // Today (4 slots completed - matching 4/5)
-    createSeedPastLog('log_td_1', 0, 9, 18, 'squats', 'Bodyweight Desk Squats', 98, 45, 5),
-    createSeedPastLog('log_td_2', 0, 10, 24, 'pushups', 'Desk Push-ups', 96, 42, 5),
-    createSeedPastLog('log_td_3', 0, 13, 15, 'walk', '5-Minute Posture Walk', 100, 300, 5),
-    createSeedPastLog('log_td_4', 0, 14, 42, 'jumping_jacks', 'Workday Jumping Jacks', 97, 52, 5),
-
-    // 1 day ago (Yesterday - 5 slots completed - Quota Met)
-    createSeedPastLog('log_yd_1', 1, 9, 12, 'squats', 'Bodyweight Desk Squats', 97, 44, 5),
-    createSeedPastLog('log_yd_2', 1, 10, 30, 'plank', 'Core Desk Plank Hold', 94, 20, 5),
-    createSeedPastLog('log_yd_3', 1, 12, 10, 'walk', '5-Minute Posture Walk', 100, 300, 5),
-    createSeedPastLog('log_yd_4', 1, 14, 20, 'pushups', 'Desk Push-ups', 95, 48, 5),
-    createSeedPastLog('log_yd_5', 1, 16, 15, 'jumping_jacks', 'Workday Jumping Jacks', 98, 50, 12),
-
-    // 2 days ago (5 slots completed - Quota Met)
-    createSeedPastLog('log_2d_1', 2, 9, 25, 'pushups', 'Desk Push-ups', 96, 46, 5),
-    createSeedPastLog('log_2d_2', 2, 11, 14, 'squats', 'Bodyweight Desk Squats', 98, 42, 5),
-    createSeedPastLog('log_2d_3', 2, 13, 5, 'walk', '5-Minute Posture Walk', 100, 300, 5),
-    createSeedPastLog('log_2d_4', 2, 14, 50, 'plank', 'Core Desk Plank Hold', 95, 20, 5),
-    createSeedPastLog('log_2d_5', 2, 16, 30, 'squats', 'Bodyweight Desk Squats', 99, 45, 12),
-
-    // 3 days ago (5 slots completed - Quota Met)
-    createSeedPastLog('log_3d_1', 3, 10, 10, 'squats', 'Bodyweight Desk Squats', 97, 45, 5),
-    createSeedPastLog('log_3d_2', 3, 11, 40, 'jumping_jacks', 'Workday Jumping Jacks', 96, 50, 5),
-    createSeedPastLog('log_3d_3', 3, 13, 20, 'walk', '5-Minute Posture Walk', 100, 300, 5),
-    createSeedPastLog('log_3d_4', 3, 15, 15, 'pushups', 'Desk Push-ups', 94, 50, 5),
-    createSeedPastLog('log_3d_5', 3, 16, 45, 'plank', 'Core Desk Plank Hold', 96, 20, 12),
-
-    // 4 days ago (5 slots completed - Challenge Kickoff)
-    createSeedPastLog('log_4d_1', 4, 9, 30, 'squats', 'Bodyweight Desk Squats', 95, 48, 5),
-    createSeedPastLog('log_4d_2', 4, 11, 15, 'walk', '5-Minute Posture Walk', 100, 300, 5),
-    createSeedPastLog('log_4d_3', 4, 13, 10, 'pushups', 'Desk Push-ups', 96, 45, 5),
-    createSeedPastLog('log_4d_4', 4, 14, 30, 'jumping_jacks', 'Workday Jumping Jacks', 98, 55, 5),
-    createSeedPastLog('log_4d_5', 4, 15, 50, 'plank', 'Core Desk Plank Hold', 97, 20, 10),
-  ];
-}
-
 export const INITIAL_USER: UserProfile = {
   id: 'user_me',
   name: 'Athlete',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-  streakDays: 4,
-  todayRoutinesCount: 4,
-  totalPoints: 145,
-  squadCode: 'MOVE-9TO5',
-  squadName: '9-to-5 Workplace Mobility',
+  streakDays: 0,
+  todayRoutinesCount: 0,
+  totalPoints: 0,
+  squadCode: '',
+  squadName: '',
   reminderIntervalMinutes: 60,
   soundEnabled: true,
   voiceEnabled: true,
-  unlockedBadgeIds: ['first_routine', 'streak_3d'],
+  unlockedBadgeIds: [],
 };
 
 export const storage = {
@@ -128,16 +72,9 @@ export const storage = {
   getRoutineLogs(): RoutineLog[] {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.ROUTINE_LOGS);
-      if (data) {
-        return JSON.parse(data);
-      }
-      const initialSeed = generateInitialSeedLogs();
-      try {
-        localStorage.setItem(STORAGE_KEYS.ROUTINE_LOGS, JSON.stringify(initialSeed));
-      } catch {}
-      return initialSeed;
+      return data ? JSON.parse(data) : [];
     } catch {
-      return generateInitialSeedLogs();
+      return [];
     }
   },
 

@@ -121,9 +121,9 @@ function AppContent() {
       if (isMounted) {
         setActiveChallenge({
           id: 'chal_default_workday',
-          name: profile.squadName || '9-to-5 Workplace Mobility',
+          name: profile.squadName || 'Workday Mobility Challenge',
           description: 'Daily workplace mobility challenge with real-time scoring and streaks.',
-          inviteCode: profile.squadCode || 'MOVE-9TO5',
+          inviteCode: profile.squadCode || '',
           dailyTargetSlots: 5,
           createdBy: profile.id,
           creatorName: profile.name,

@@ -45,17 +45,17 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             onClick={onOpenAuthModal}
-            title={`${user.streakDays || 1}-day streak`}
+            title={`${user.streakDays ?? 0}-day streak`}
             className="flex flex-col items-center modern-press group"
           >
             <div className="w-10 h-10 rounded-full border-2 border-amber-400/90 bg-amber-500/20 dark:bg-amber-500/25 flex items-center justify-center shadow-[0_0_14px_rgba(251,191,36,0.3)] transition-transform group-hover:scale-105">
               <span className="text-neutral-950 dark:text-white font-black text-sm tabular-nums">
-                {user.streakDays || 1}
+                {user.streakDays ?? 0}
               </span>
               <span className="text-sm ml-0.5">🔥</span>
             </div>
             <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-tight mt-0.5">
-              {user.streakDays || 1}-day streak
+              {user.streakDays ?? 0}-day streak
             </span>
           </button>
 
