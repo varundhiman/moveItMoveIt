@@ -34,26 +34,30 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="max-w-md sm:max-w-xl mx-auto flex items-center justify-between gap-3">
         {/* Brand Wordmark */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <span className="font-black text-xl tracking-tight text-neutral-900 dark:text-white font-sans">
-              MoveMates
-            </span>
-            <div className="w-5 h-5 bg-emerald-400 dark:bg-emerald-500 rounded-md flex items-center justify-center shadow-xs">
-              <Zap className="w-3 h-3 text-neutral-950 stroke-[3]" />
-            </div>
-          </div>
+          <span className="font-extrabold text-2xl tracking-tight text-neutral-900 dark:text-white font-sans">
+            MoveMates
+          </span>
         </div>
 
-        {/* Right Action Icons & Profile Badge */}
-        <div className="flex items-center gap-2">
-          {/* Workday Streak Pill */}
-          <div
-            title={`${user.streakDays} day streak`}
-            className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 px-2.5 py-1 rounded-full text-xs font-bold text-amber-700 dark:text-amber-300"
+        {/* Right Action Icons & Streak Badge */}
+        <div className="flex items-center gap-2.5">
+          {/* Workday Streak Badge (Matching Screenshot) */}
+          <button
+            type="button"
+            onClick={onOpenAuthModal}
+            title={`${user.streakDays || 1}-day streak`}
+            className="flex flex-col items-center modern-press group"
           >
-            <Flame className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-            <span className="tabular-nums font-mono">{user.streakDays}d</span>
-          </div>
+            <div className="w-10 h-10 rounded-full border-2 border-amber-400/90 bg-amber-500/20 dark:bg-amber-500/25 flex items-center justify-center shadow-[0_0_14px_rgba(251,191,36,0.3)] transition-transform group-hover:scale-105">
+              <span className="text-neutral-950 dark:text-white font-black text-sm tabular-nums">
+                {user.streakDays || 1}
+              </span>
+              <span className="text-sm ml-0.5">🔥</span>
+            </div>
+            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 tracking-tight mt-0.5">
+              {user.streakDays || 1}-day streak
+            </span>
+          </button>
 
           {/* Dark / Light Mode Toggle */}
           <button

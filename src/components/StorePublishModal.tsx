@@ -129,6 +129,16 @@ export const StorePublishModal: React.FC<StorePublishModalProps> = ({ onClose })
                   In Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains, add your Netlify address (e.g. <code className="font-mono bg-amber-100 dark:bg-amber-900/50 px-1 rounded">your-site.netlify.app</code>).
                 </p>
               </div>
+
+              <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/25 border border-sky-200/80 dark:border-sky-800/50">
+                <div className="font-bold text-sky-900 dark:text-sky-300 mb-1 flex items-center justify-between">
+                  <span>Hide "Powered by Netlify" Badge</span>
+                  <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-sky-200 dark:bg-sky-900/50 text-sky-800 dark:text-sky-300">1-Click</span>
+                </div>
+                <p className="text-sky-800/90 dark:text-sky-300/80 text-[11px] leading-relaxed">
+                  In Netlify Dashboard: select your site &gt; <strong className="text-sky-900 dark:text-sky-200">Project configuration &gt; General &gt; Powered by Netlify badge</strong> &gt; Toggle to <strong className="text-rose-500 font-bold">OFF</strong> and save. The badge will instantly disappear without a redeploy.
+                </p>
+              </div>
             </div>
           )}
 
@@ -137,16 +147,26 @@ export const StorePublishModal: React.FC<StorePublishModalProps> = ({ onClose })
               <div className="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/50 border border-neutral-200/80 dark:border-neutral-750">
                 <div className="font-bold text-neutral-900 dark:text-white flex items-center gap-2 mb-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  PWABuilder · Trusted Web Activity (TWA)
+                  Automated GitHub Actions Pipeline (Configured)
                 </div>
                 <p className="text-neutral-600 dark:text-neutral-300">
-                  Google Play natively accepts PWAs packaged as Android App Bundles (<code className="font-mono text-emerald-600 dark:text-emerald-400">.aab</code>):
+                  A complete CI/CD workflow is configured in <code className="font-mono text-emerald-600 dark:text-emerald-400 bg-neutral-200/60 dark:bg-neutral-900 px-1 py-0.5 rounded">.github/workflows/deploy-playstore.yml</code>:
                 </p>
                 <ol className="mt-2.5 list-decimal list-inside space-y-1.5 text-neutral-600 dark:text-neutral-400">
-                  <li>Enter your live URL into <strong className="text-neutral-900 dark:text-white">PWABuilder.com</strong>.</li>
-                  <li>Click <strong className="text-neutral-900 dark:text-white">Package for Store &gt; Android</strong>.</li>
-                  <li>Download the signed <code className="font-mono">.aab</code> package and submit to Google Play Console.</li>
+                  <li><strong>Push to GitHub:</strong> <code className="font-mono bg-neutral-200/60 dark:bg-neutral-900 px-1 rounded">git push origin main</code></li>
+                  <li><strong>Auto-Deploy Web:</strong> Netlify builds and deploys your web app.</li>
+                  <li><strong>Auto-Build Android AAB:</strong> GitHub Actions compiles the Android App Bundle using Bubblewrap.</li>
+                  <li><strong>Auto-Upload Release:</strong> Automatically creates a new internal/closed testing release in Google Play Console!</li>
                 </ol>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/25 border border-amber-200/80 dark:border-amber-800/50">
+                <div className="font-bold text-amber-900 dark:text-amber-300 mb-1">
+                  1-Time Setup in GitHub Repository Secrets
+                </div>
+                <p className="text-amber-800/90 dark:text-amber-300/80 text-[11px] leading-relaxed">
+                  In GitHub &gt; <strong>Settings &gt; Secrets and variables &gt; Actions</strong>, add <code className="font-mono font-bold bg-amber-100 dark:bg-amber-900/50 px-1 rounded">PLAY_STORE_JSON_KEY</code> (your Google Play service account JSON key) to allow GitHub to publish releases automatically without manual uploads.
+                </p>
               </div>
             </div>
           )}

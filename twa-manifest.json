@@ -1,0 +1,31 @@
+{
+  "packageId": "com.movemates.app",
+  "host": "movemates.netlify.app",
+  "name": "MoveMates: 9-to-5 Mobility",
+  "launcherName": "MoveMates",
+  "display": "standalone",
+  "themeColor": "#0B0D13",
+  "navigationColor": "#0B0D13",
+  "backgroundColor": "#0B0D13",
+  "enableNotifications": true,
+  "startUrl": "/",
+  "iconUrl": "/pwa-512x512.png",
+  "maskableIconUrl": "/pwa-maskable-512x512.png",
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {
+    "locationDelegation": {
+      "enabled": false
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "alphaDependencies": {
+    "enabled": false
+  }
+}

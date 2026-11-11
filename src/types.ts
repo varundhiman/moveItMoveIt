@@ -46,6 +46,29 @@ export interface WorkdaySlot {
   completedLog?: RoutineLog;
 }
 
+export interface DaySummary {
+  dateStr: string; // "YYYY-MM-DD"
+  displayDate: string; // "Today", "Yesterday", "Tuesday, Nov 10"
+  shortDay: string; // "Wed", "Tue", "Mon"
+  dayNumber: number; // 11, 10, 9
+  isToday: boolean;
+  isYesterday: boolean;
+  completedSlotsCount: number;
+  targetSlots: number;
+  isGoalMet: boolean;
+  totalPoints: number;
+  totalDurationSeconds: number;
+  averageFormScore: number;
+  logs: RoutineLog[];
+  slotDistribution: {
+    slotIndex: number;
+    startHour: number;
+    timeLabel: string;
+    isCompleted: boolean;
+    routineTitle?: string;
+  }[];
+}
+
 export interface DigitalBadge {
   id: string;
   title: string;

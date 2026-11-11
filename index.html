@@ -32,6 +32,29 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
+    <!-- Auto-suppress Netlify floating badge / drawer -->
+    <script>
+      try {
+        localStorage.setItem('nl-hud:public:v1', 'hidden');
+        localStorage.setItem('netlify-badge-dismissed', 'true');
+      } catch (e) {}
+
+      (function() {
+        function removeNetlifyBadge() {
+          var items = document.querySelectorAll('iframe[src*="netlify"], div[data-netlify-deploy-id], [class*="netlify-badge"], [id*="netlify-badge"]');
+          for (var i = 0; i < items.length; i++) {
+            items[i].remove();
+          }
+        }
+        if (typeof MutationObserver !== 'undefined') {
+          var obs = new MutationObserver(removeNetlifyBadge);
+          obs.observe(document.documentElement, { childList: true, subtree: true });
+        }
+        document.addEventListener('DOMContentLoaded', removeNetlifyBadge);
+        window.addEventListener('load', removeNetlifyBadge);
+      })();
+    </script>
   </head>
   <body class="bg-[#FAF7F0] text-neutral-900 antialiased selection:bg-amber-300 selection:text-neutral-900">
     <div id="root"></div>

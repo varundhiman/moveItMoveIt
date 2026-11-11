@@ -61,3 +61,20 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
 }
+
+/* Suppress Netlify edge-injected badge & feedback drawer */
+iframe[src*="netlify"],
+div[data-netlify-deploy-id],
+[id*="netlify"],
+[class*="netlify-badge"],
+[class*="netlify-drawer"],
+#netlify-identity-widget,
+a[href*="netlify.com"][style*="fixed"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  clip: rect(0, 0, 0, 0) !important;
+}

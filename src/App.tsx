@@ -25,7 +25,8 @@ import { HomeScreen } from './components/HomeScreen';
 import { Header } from './components/Header';
 import { BottomNavBar, NavTab } from './components/BottomNavBar';
 import { WorkdayRoutineTracker } from './components/WorkdayRoutineTracker';
-import { PickMoveView } from './components/PickMoveView';
+import { PickMoveModal } from './components/PickMoveModal';
+import { HistoryView } from './components/HistoryView';
 import { LeaderboardView } from './components/LeaderboardView';
 import { BadgesView } from './components/BadgesView';
 import { CameraTrackerModal } from './components/CameraTrackerModal';
@@ -48,6 +49,7 @@ function AppContent() {
 
   const [activeTab, setActiveTab] = useState<NavTab>('radar');
   const [activeWorkout, setActiveWorkout] = useState<MobilityRoutine | null>(null);
+  const [showPickMoveModal, setShowPickMoveModal] = useState(false);
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCreateChallengeModal, setShowCreateChallengeModal] = useState(false);
@@ -366,15 +368,16 @@ function AppContent() {
               timeRemainingStr={windowInfo.timeRemainingStr}
               dailyTargetSlots={activeChallenge?.dailyTargetSlots || 5}
               challengeName={activeChallenge?.name}
-              onStartMove={() => setActiveTab('moves')}
+              onStartMove={() => setShowPickMoveModal(true)}
             />
           )}
 
-          {activeTab === 'moves' && (
-            <PickMoveView
-              routines={MOBILITY_ROUTINES}
-              onSelectRoutine={handleSelectRoutineToTrack}
-              onBackToRadar={() => setActiveTab('radar')}
+          {activeTab === 'history' && (
+            <HistoryView
+              allLogs={allLogs}
+              dailyTargetSlots={activeChallenge?.dailyTargetSlots || 5}
+              streakDays={profile.streakDays}
+              onStartMove={() => setShowPickMoveModal(true)}
             />
           )}
 
@@ -472,6 +475,18 @@ function AppContent() {
         <BadgeUnlockModal
           badge={latestUnlockedBadge}
           onClose={() => setLatestUnlockedBadge(null)}
+        />
+      )}
+
+      {/* Pick a Move Quick Modal */}
+      {showPickMoveModal && (
+        <PickMoveModal
+          routines={MOBILITY_ROUTINES}
+          onSelectRoutine={(routine) => {
+            setShowPickMoveModal(false);
+            handleSelectRoutineToTrack(routine);
+          }}
+          onClose={() => setShowPickMoveModal(false)}
         />
       )}
     </div>
