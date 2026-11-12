@@ -67,10 +67,10 @@ service cloud.firestore {
       match /members/{memberUserId} {
         allow get, list: if isSignedIn();
         allow create: if isSignedIn() && request.auth.uid == memberUserId
-          && incoming().userId == request.auth.uid
+          && (incoming().userId == request.auth.uid || incoming().id == request.auth.uid)
           && incoming().name is string && incoming().name.size() <= 100;
         allow update: if isSignedIn() && (
-          (request.auth.uid == memberUserId && incoming().userId == existing().userId) ||
+          (request.auth.uid == memberUserId) ||
           (incoming().diff(existing()).affectedKeys().hasOnly(['cheerCount']))
         );
         allow delete: if isSignedIn() && request.auth.uid == memberUserId;
@@ -80,12 +80,31 @@ service cloud.firestore {
       match /activities/{activityId} {
         allow get, list: if isSignedIn();
         allow create: if isSignedIn()
-          && incoming().userId == request.auth.uid
+          && (incoming().userId == request.auth.uid || incoming().id == request.auth.uid)
           && incoming().routineTitle is string && incoming().routineTitle.size() <= 64;
         allow update: if isSignedIn()
           && incoming().diff(existing()).affectedKeys().hasOnly(['cheers']);
-        allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+        allow delete: if isSignedIn() && (existing().userId == request.auth.uid || existing().id == request.auth.uid);
       }
+    }
+
+    // Invitations Collection
+    match /invitations/{inviteId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn()
+        && (incoming().inviterId == request.auth.uid || incoming().inviterUserId == request.auth.uid)
+        && incoming().challengeId is string
+        && incoming().inviteCode is string;
+      allow update: if isSignedIn()
+        && (
+          incoming().targetUserId == request.auth.uid ||
+          existing().targetUserId == request.auth.uid ||
+          incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+        );
+      allow delete: if isSignedIn() && (
+        existing().inviterId == request.auth.uid ||
+        existing().targetUserId == request.auth.uid
+      );
     }
   }
 }

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Trophy, Target, Calendar, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, Trophy, Target, Calendar, Sparkles, CheckCircle2, Info } from 'lucide-react';
 import { Challenge, UserProfile } from '../types';
 import { challengeService } from '../services/challengeService';
+import { auth } from '../services/firebase';
 
 interface CreateChallengeModalProps {
   user: UserProfile;
@@ -21,6 +22,8 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
   const [endDate, setEndDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const isGuestUser = !auth.currentUser;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,9 +45,10 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
       });
       onCreated(challenge);
       onClose();
-    } catch (err) {
-      console.error(err);
-      setErrorMsg('Failed to create challenge in database. Please check connection.');
+    } catch (err: unknown) {
+      console.error('Challenge creation error:', err);
+      const msg = err instanceof Error ? err.message : 'Failed to create challenge in database. Please check connection.';
+      setErrorMsg(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -70,6 +74,15 @@ export const CreateChallengeModal: React.FC<CreateChallengeModalProps> = ({
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {isGuestUser && (
+          <div className="mt-3 p-3 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-900/40 flex items-start gap-2 text-[11px] text-amber-800 dark:text-amber-300">
+            <Info className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+            <p>
+              <strong>Guest Mode:</strong> Your challenge and invite code will be created and saved locally on this device. Sign in with Google to sync in real time with coworkers.
+            </p>
+          </div>
+        )}
 
         {errorMsg && (
           <div className="mt-3 p-3 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs font-semibold text-rose-700 dark:text-rose-300">

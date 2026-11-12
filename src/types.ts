@@ -116,6 +116,7 @@ export interface UserProfile {
 
 export interface LeaderboardMember {
   id: string;
+  userId?: string;
   name: string;
   avatar: string;
   isCurrentUser?: boolean;
@@ -143,6 +144,21 @@ export interface ActivityFeedItem {
   timestamp: number;
   cheers: number;
   pointsEarned?: number;
+}
+
+export interface GroupInvite {
+  id: string;
+  challengeId: string;
+  challengeName: string;
+  dailyTargetSlots: number;
+  inviteCode: string;
+  inviterId: string;
+  inviterName: string;
+  inviterAvatar?: string;
+  targetUserId?: string;
+  targetEmail?: string;
+  status: 'pending' | 'accepted' | 'declined';
+  createdAt: string;
 }
 
 export interface Point2D {

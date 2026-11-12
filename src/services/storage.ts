@@ -1,4 +1,4 @@
-import { UserProfile, LeaderboardMember, RoutineLog, ActivityFeedItem, WorkdaySlot, PointBreakdown, DaySummary } from '../types';
+import { UserProfile, LeaderboardMember, RoutineLog, ActivityFeedItem, WorkdaySlot, PointBreakdown, DaySummary, Challenge, GroupInvite } from '../types';
 import { calculateRoutinePoints } from './points';
 
 const STORAGE_KEYS = {
@@ -7,6 +7,7 @@ const STORAGE_KEYS = {
   LEADERBOARD_MEMBERS: 'movemates_leaderboard_members_v5',
   ACTIVITY_FEED: 'movemates_activity_feed_v5',
   ACTIVE_CHALLENGE: 'movemates_active_challenge_v5',
+  INVITATIONS: 'movemates_invitations_v5',
 };
 
 // Purge any stale mocked data from previous iterations in browser storage
@@ -443,4 +444,60 @@ export const storage = {
     this.saveLeaderboard(updated);
     return updated;
   },
+
+  getActiveChallenge(): Challenge | null {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.ACTIVE_CHALLENGE);
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  saveActiveChallenge(challenge: Challenge): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_CHALLENGE, JSON.stringify(challenge));
+    } catch (e) {
+      console.error('Failed to save active challenge', e);
+    }
+  },
+
+  getInvites(): GroupInvite[] {
+    try {
+      const data = localStorage.getItem(STORAGE_KEYS.INVITATIONS);
+      return data ? JSON.parse(data) : [];
+    } catch {
+      return [];
+    }
+  },
+
+  getPendingInvites(): GroupInvite[] {
+    return this.getInvites().filter((i) => i.status === 'pending');
+  },
+
+  saveInvite(invite: GroupInvite): void {
+    try {
+      const list = this.getInvites();
+      const existingIdx = list.findIndex((x) => x.id === invite.id);
+      if (existingIdx >= 0) {
+        list[existingIdx] = invite;
+      } else {
+        list.unshift(invite);
+      }
+      localStorage.setItem(STORAGE_KEYS.INVITATIONS, JSON.stringify(list));
+    } catch (e) {
+      console.error('Failed to save invite', e);
+    }
+  },
+
+  updateInviteStatus(inviteId: string, status: 'accepted' | 'declined'): void {
+    try {
+      const list = this.getInvites();
+      const updated = list.map((i) => (i.id === inviteId ? { ...i, status } : i));
+      localStorage.setItem(STORAGE_KEYS.INVITATIONS, JSON.stringify(updated));
+    } catch (e) {
+      console.error('Failed to update invite status', e);
+    }
+  },
 };
+

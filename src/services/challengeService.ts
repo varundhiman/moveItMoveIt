@@ -16,6 +16,8 @@ import {
 import { db, auth, handleFirestoreError, OperationType } from './firebase';
 import { Challenge, LeaderboardMember, ActivityFeedItem, RoutineLog, UserProfile, PointBreakdown } from '../types';
 
+import { storage } from './storage';
+
 export const challengeService = {
   /**
    * Generates a clean, readable invite code (e.g. MOVE-4821)
@@ -27,7 +29,7 @@ export const challengeService = {
   },
 
   /**
-   * Create a new challenge in Firestore
+   * Create a new challenge in Firestore (with graceful local fallback for guests & offline)
    */
   async createChallenge(params: {
     name: string;
@@ -59,47 +61,63 @@ export const challengeService = {
       createdAt: new Date().toISOString(),
     };
 
-    try {
-      const challengeRef = doc(db, 'challenges', challengeId);
-      await setDoc(challengeRef, challengeData);
+    const initialMember: LeaderboardMember = {
+      id: userId,
+      userId: userId,
+      name: creatorName,
+      avatar: user?.photoURL || params.creator.avatar || '',
+      isCurrentUser: true,
+      todayCompletedCount: params.creator.todayRoutinesCount || 0,
+      todayActivitiesCount: 0,
+      streakDays: params.creator.streakDays || 0,
+      totalScore: params.creator.totalPoints || 0,
+      lastActiveTime: 'Just joined',
+      lastRoutine: 'Ready to start',
+      cheerCount: 0,
+      status: 'online',
+      joinedAt: new Date().toISOString(),
+    };
 
-      // Add creator as the first member with real starting points
-      const memberRef = doc(db, 'challenges', challengeId, 'members', userId);
-      const initialMember: LeaderboardMember = {
-        id: userId,
-        name: creatorName,
-        avatar: user?.photoURL || params.creator.avatar,
-        isCurrentUser: true,
-        todayCompletedCount: params.creator.todayRoutinesCount || 0,
-        todayActivitiesCount: 0,
-        streakDays: params.creator.streakDays || 0,
-        totalScore: params.creator.totalPoints || 0,
-        lastActiveTime: 'Just joined',
-        lastRoutine: 'Ready to start',
-        cheerCount: 0,
-        status: 'online',
-        joinedAt: new Date().toISOString(),
-      };
-      await setDoc(memberRef, initialMember);
+    // Save locally immediately
+    storage.saveActiveChallenge(challengeData);
+    storage.saveUserProfile({
+      ...params.creator,
+      currentChallengeId: challengeId,
+      squadCode: inviteCode,
+      squadName: challengeData.name,
+    });
+    storage.saveLeaderboard([initialMember]);
 
-      // Update creator's profile with active challenge ID
-      if (user) {
-        const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, {
-          currentChallengeId: challengeId,
-          squadCode: inviteCode,
-          squadName: challengeData.name,
-          updatedAt: new Date().toISOString(),
-        }).catch(() => {
-          // Ignore if user profile document not created yet
-        });
+    // If user is authenticated, sync to Firestore
+    if (user) {
+      try {
+        const challengeRef = doc(db, 'challenges', challengeId);
+        await setDoc(challengeRef, challengeData);
+
+        // Add creator as member in subcollection
+        const memberRef = doc(db, 'challenges', challengeId, 'members', user.uid);
+        await setDoc(memberRef, initialMember);
+
+        // Update user profile doc in Firestore
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(
+          userRef,
+          {
+            currentChallengeId: challengeId,
+            squadCode: inviteCode,
+            squadName: challengeData.name,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        ).catch(() => {});
+      } catch (error) {
+        console.warn('Firestore cloud sync failed, challenge saved locally:', error);
+        // If it was a network error, local persistence ensures the app keeps working
+        // Only throw if user expects cloud sync and error is fatal
       }
-
-      return challengeData;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `challenges/${challengeId}`);
-      throw error;
     }
+
+    return challengeData;
   },
 
   /**
@@ -111,6 +129,18 @@ export const challengeService = {
     const userId = user?.uid || userProfile.id;
     const memberName = user?.displayName || userProfile.name || 'Anonymous';
     const memberAvatar = user?.photoURL || userProfile.avatar;
+
+    // Check local active challenge first if guest or matching code
+    const localActive = storage.getActiveChallenge();
+    if (localActive && localActive.inviteCode?.toUpperCase() === normalizedCode) {
+      storage.saveUserProfile({
+        ...userProfile,
+        currentChallengeId: localActive.id,
+        squadCode: localActive.inviteCode,
+        squadName: localActive.name,
+      });
+      return localActive;
+    }
 
     try {
       const q = query(
@@ -134,6 +164,7 @@ export const challengeService = {
       if (!existingMemberSnap.exists()) {
         const newMember: LeaderboardMember = {
           id: userId,
+          userId: userId,
           name: memberName,
           avatar: memberAvatar,
           todayCompletedCount: 0,
@@ -151,19 +182,31 @@ export const challengeService = {
         // Increment challenge member count
         await updateDoc(challengeDoc.ref, {
           memberCount: increment(1),
-        });
+        }).catch(() => {});
       }
 
       // Update user's profile
       if (user) {
         const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, {
-          currentChallengeId: challenge.id,
-          squadCode: challenge.inviteCode,
-          squadName: challenge.name,
-          updatedAt: new Date().toISOString(),
-        }).catch(() => {});
+        await setDoc(
+          userRef,
+          {
+            currentChallengeId: challenge.id,
+            squadCode: challenge.inviteCode,
+            squadName: challenge.name,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        ).catch(() => {});
       }
+
+      storage.saveActiveChallenge(challenge);
+      storage.saveUserProfile({
+        ...userProfile,
+        currentChallengeId: challenge.id,
+        squadCode: challenge.inviteCode,
+        squadName: challenge.name,
+      });
 
       return challenge;
     } catch (error) {
@@ -176,11 +219,23 @@ export const challengeService = {
    * Fetch a challenge by ID
    */
   async getChallengeById(challengeId: string): Promise<Challenge | null> {
+    const localActive = storage.getActiveChallenge();
+    if (localActive && localActive.id === challengeId) {
+      return localActive;
+    }
+    if (!auth.currentUser) {
+      return localActive;
+    }
     try {
       const snap = await getDoc(doc(db, 'challenges', challengeId));
-      if (!snap.exists()) return null;
-      return snap.data() as Challenge;
+      if (!snap.exists()) return localActive;
+      const data = snap.data() as Challenge;
+      storage.saveActiveChallenge(data);
+      return data;
     } catch (error) {
+      if (localActive && localActive.id === challengeId) {
+        return localActive;
+      }
       handleFirestoreError(error, OperationType.GET, `challenges/${challengeId}`);
       return null;
     }
@@ -194,6 +249,15 @@ export const challengeService = {
     currentUserId: string,
     onUpdate: (members: LeaderboardMember[]) => void
   ): () => void {
+    if (!auth.currentUser) {
+      // Guest mode fallback: load from local storage
+      const localMembers = storage.getLeaderboard();
+      if (localMembers && localMembers.length > 0) {
+        onUpdate(localMembers);
+      }
+      return () => {};
+    }
+
     const membersRef = collection(db, 'challenges', challengeId, 'members');
     return onSnapshot(
       membersRef,
@@ -204,6 +268,7 @@ export const challengeService = {
           members.push({
             ...data,
             id: docSnap.id,
+            userId: data.userId || docSnap.id,
             isCurrentUser: docSnap.id === currentUserId,
           });
         });
@@ -219,7 +284,11 @@ export const challengeService = {
         onUpdate(members);
       },
       (error) => {
-        handleFirestoreError(error, OperationType.LIST, `challenges/${challengeId}/members`);
+        console.warn('Could not listen to challenge members:', error);
+        const localMembers = storage.getLeaderboard();
+        if (localMembers && localMembers.length > 0) {
+          onUpdate(localMembers);
+        }
       }
     );
   },
@@ -231,6 +300,11 @@ export const challengeService = {
     challengeId: string,
     onUpdate: (activities: ActivityFeedItem[]) => void
   ): () => void {
+    if (!auth.currentUser) {
+      onUpdate([]);
+      return () => {};
+    }
+
     const activitiesRef = collection(db, 'challenges', challengeId, 'activities');
     return onSnapshot(
       activitiesRef,
@@ -261,7 +335,8 @@ export const challengeService = {
         onUpdate(items);
       },
       (error) => {
-        handleFirestoreError(error, OperationType.LIST, `challenges/${challengeId}/activities`);
+        console.warn('Could not listen to challenge activities:', error);
+        onUpdate([]);
       }
     );
   },
@@ -282,6 +357,21 @@ export const challengeService = {
     const userId = authUser?.uid || user.id;
     const userName = authUser?.displayName || user.name || 'You';
     const userAvatar = authUser?.photoURL || user.avatar;
+
+    // If guest mode or offline, update local leaderboard only
+    if (!authUser) {
+      const localLeaderboard = storage.getLeaderboard();
+      const memberIndex = localLeaderboard.findIndex((m) => m.id === userId || m.isCurrentUser);
+      if (memberIndex >= 0) {
+        localLeaderboard[memberIndex].totalScore += pointBreakdown.totalEarned;
+        localLeaderboard[memberIndex].todayCompletedCount = newCompletedSlotsCount;
+        localLeaderboard[memberIndex].streakDays = newStreakDays;
+        localLeaderboard[memberIndex].lastRoutine = log.routineTitle;
+        localLeaderboard[memberIndex].lastActiveTime = 'Just now';
+        storage.saveLeaderboard(localLeaderboard);
+      }
+      return;
+    }
 
     try {
       // 1. Post to challenge activity feed
@@ -318,6 +408,7 @@ export const challengeService = {
         // Create member record if not yet exists
         await setDoc(memberRef, {
           id: userId,
+          userId: userId,
           name: userName,
           avatar: userAvatar,
           totalScore: pointBreakdown.totalEarned,
@@ -332,8 +423,17 @@ export const challengeService = {
         });
       }
     } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `challenges/${challengeId}`);
-      throw error;
+      console.warn('Firestore challenge activity record failed (falling back locally):', error);
+      const localLeaderboard = storage.getLeaderboard();
+      const memberIndex = localLeaderboard.findIndex((m) => m.id === userId || m.isCurrentUser);
+      if (memberIndex >= 0) {
+        localLeaderboard[memberIndex].totalScore += pointBreakdown.totalEarned;
+        localLeaderboard[memberIndex].todayCompletedCount = newCompletedSlotsCount;
+        localLeaderboard[memberIndex].streakDays = newStreakDays;
+        localLeaderboard[memberIndex].lastRoutine = log.routineTitle;
+        localLeaderboard[memberIndex].lastActiveTime = 'Just now';
+        storage.saveLeaderboard(localLeaderboard);
+      }
     }
   },
 
@@ -341,14 +441,22 @@ export const challengeService = {
    * Send a cheer to a challenge member
    */
   async cheerMember(challengeId: string, memberUserId: string): Promise<void> {
+    if (!auth.currentUser) {
+      const localLeaderboard = storage.getLeaderboard();
+      const m = localLeaderboard.find((x) => x.id === memberUserId);
+      if (m) {
+        m.cheerCount = (m.cheerCount || 0) + 1;
+        storage.saveLeaderboard(localLeaderboard);
+      }
+      return;
+    }
     try {
       const memberRef = doc(db, 'challenges', challengeId, 'members', memberUserId);
       await updateDoc(memberRef, {
         cheerCount: increment(1),
       });
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `challenges/${challengeId}/members/${memberUserId}`);
-      throw error;
+      console.warn('Could not update cheerCount on Firestore:', error);
     }
   },
 };

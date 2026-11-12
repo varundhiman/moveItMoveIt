@@ -291,6 +291,68 @@
         }
       },
       "required": ["userId", "routineId", "routineTitle", "completedAt", "score"]
+    },
+    "GroupInvite": {
+      "title": "GroupInvite",
+      "description": "Invitation sent to another user to join a challenge squad",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique invite ID"
+        },
+        "challengeId": {
+          "type": "string",
+          "description": "ID of challenge"
+        },
+        "challengeName": {
+          "type": "string",
+          "description": "Name of challenge",
+          "maxLength": 100
+        },
+        "dailyTargetSlots": {
+          "type": "number",
+          "description": "Slots per day target"
+        },
+        "inviteCode": {
+          "type": "string",
+          "description": "Shareable invite code",
+          "maxLength": 32
+        },
+        "inviterId": {
+          "type": "string",
+          "description": "UID of person who sent invite"
+        },
+        "inviterName": {
+          "type": "string",
+          "description": "Name of person who sent invite",
+          "maxLength": 100
+        },
+        "inviterAvatar": {
+          "type": "string",
+          "description": "Avatar of inviter",
+          "maxLength": 512
+        },
+        "targetUserId": {
+          "type": "string",
+          "description": "UID of target recipient user"
+        },
+        "targetEmail": {
+          "type": "string",
+          "description": "Email of recipient",
+          "maxLength": 128
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of invitation",
+          "enum": ["pending", "accepted", "declined"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        }
+      },
+      "required": ["challengeId", "challengeName", "inviteCode", "inviterId", "inviterName", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -313,6 +375,10 @@
     "/challenges/{challengeId}/activities/{activityId}": {
       "schema": "ChallengeActivity",
       "description": "Live real-time feed of routines completed in challenge"
+    },
+    "/invitations/{inviteId}": {
+      "schema": "GroupInvite",
+      "description": "Invitations sent to users to join challenges"
     }
   }
 }

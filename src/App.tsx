@@ -12,10 +12,12 @@ import {
   DigitalBadge,
   Challenge,
   PointBreakdown,
+  GroupInvite,
 } from './types';
 import { MOBILITY_ROUTINES } from './data/routines';
 import { storage } from './services/storage';
 import { challengeService } from './services/challengeService';
+import { inviteService } from './services/inviteService';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { db } from './services/firebase';
@@ -38,11 +40,13 @@ import { CreateChallengeModal } from './components/CreateChallengeModal';
 import { JoinChallengeModal } from './components/JoinChallengeModal';
 import { PointsEarnedModal } from './components/PointsEarnedToast';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { HomeInviteBanner } from './components/HomeInviteBanner';
 
 function AppContent() {
   const { profile, firebaseUser, loading, isGuest, continueAsGuest, updateUserProfile } = useAuth();
   const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null);
   const [members, setMembers] = useState<LeaderboardMember[]>(() => storage.getLeaderboard());
+  const [pendingInvites, setPendingInvites] = useState<GroupInvite[]>(() => storage.getPendingInvites());
   const [allLogs, setAllLogs] = useState<RoutineLog[]>(() => storage.getRoutineLogs());
   const [todayLogs, setTodayLogs] = useState<RoutineLog[]>(() => storage.getTodayLogs());
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>(() => storage.getActivityFeed());
@@ -173,7 +177,45 @@ function AppContent() {
     };
   }, [activeChallenge?.id, firebaseUser?.uid, profile.id]);
 
-  // 4. Update timer for 9-to-5 window
+  // 4. Listen for real-time incoming squad invitations
+  useEffect(() => {
+    const currentUserId = firebaseUser?.uid || profile.id;
+    const currentUserEmail = firebaseUser?.email || '';
+
+    const unsubscribe = inviteService.listenIncomingInvites(
+      currentUserId,
+      currentUserEmail,
+      (invites) => {
+        setPendingInvites(invites);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [firebaseUser?.uid, firebaseUser?.email, profile.id]);
+
+  const handleAcceptInvite = async (invite: GroupInvite) => {
+    try {
+      await inviteService.respondToInvite(invite.id, 'accepted');
+      const joinedChallenge = await challengeService.joinChallengeByCode(invite.inviteCode, profile);
+      setActiveChallenge(joinedChallenge);
+      updateUserProfile({
+        currentChallengeId: joinedChallenge.id,
+        squadCode: joinedChallenge.inviteCode,
+        squadName: joinedChallenge.name,
+      });
+      setPendingInvites((prev) => prev.filter((i) => i.id !== invite.id));
+      setActiveTab('ranks');
+    } catch (err) {
+      console.error('Failed to accept invite:', err);
+    }
+  };
+
+  const handleDeclineInvite = async (inviteId: string) => {
+    await inviteService.respondToInvite(inviteId, 'declined');
+    setPendingInvites((prev) => prev.filter((i) => i.id !== inviteId));
+  };
+
+  // 5. Update timer for 9-to-5 window
   useEffect(() => {
     const timer = setInterval(() => {
       setWindowInfo(storage.isCurrentlyIn9to5());
@@ -359,6 +401,13 @@ function AppContent() {
 
         {/* Main View Area */}
         <main className="flex-1 px-4 py-5 sm:px-6">
+          {/* Pending Challenge Group Invitations Banner (shown on home screen) */}
+          <HomeInviteBanner
+            invites={pendingInvites}
+            onAccept={handleAcceptInvite}
+            onDecline={handleDeclineInvite}
+          />
+
           {activeTab === 'radar' && (
             <WorkdayRoutineTracker
               slots={slotData.slots}
@@ -386,7 +435,6 @@ function AppContent() {
               user={profile}
               challenge={activeChallenge}
               members={members}
-              activityFeed={activityFeed}
               onCheer={handleCheerMember}
               onCreateChallenge={() => setShowCreateChallengeModal(true)}
               onJoinChallenge={() => {
